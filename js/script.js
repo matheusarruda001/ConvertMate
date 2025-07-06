@@ -1,3 +1,5 @@
+// --- START OF FILE js/script.js ---
+
 document.addEventListener('DOMContentLoaded', () => {
     // Selecionando os elementos do DOM
     const dropZone = document.getElementById('drop-zone');
@@ -14,9 +16,9 @@ document.addEventListener('DOMContentLoaded', () => {
         'docx': ['pdf'],
         'mkv': ['mp4'],
         'mov': ['mp4'],
-        'jpeg': ['png', 'pdf'],
-        'jpg': ['png', 'pdf'],
-        'png': ['jpeg', 'jpg', 'pdf']
+        'jpeg': ['png', 'pdf', 'webp'],
+        'jpg': ['png', 'pdf', 'webp'],
+        'png': ['jpeg', 'jpg', 'pdf', 'webp']
     };
 
     // Evento de clique para abrir o seletor de arquivos
@@ -44,30 +46,19 @@ document.addEventListener('DOMContentLoaded', () => {
         handleFiles(e.dataTransfer.files);
     });
 
-    // Função para lidar com os arquivos selecionados
     function handleFiles(files) {
         if (files.length === 0) return;
-
-        // Limpa a lista de arquivos anterior
         fileList.innerHTML = ''; 
-        
-        // Pega o primeiro arquivo (pode ser adaptado para múltiplos)
         const file = files[0];
         displayFile(file);
-
-        // Atualiza a UI
         uploadArea.classList.add('hidden');
         conversionArea.classList.remove('hidden');
     }
 
-    // Função para mostrar o arquivo na UI
     function displayFile(file) {
         const fileExtension = file.name.split('.').pop().toLowerCase();
-        
-        // Cria o elemento para o arquivo
         const fileItem = document.createElement('div');
         fileItem.className = 'file-item';
-        
         const fileSize = (file.size / 1024 / 1024).toFixed(2); // em MB
 
         fileItem.innerHTML = `
@@ -83,7 +74,6 @@ document.addEventListener('DOMContentLoaded', () => {
         
         fileList.appendChild(fileItem);
         
-        // Adiciona evento para remover o arquivo
         fileItem.querySelector('.remove-file').addEventListener('click', () => {
             resetUI();
         });
@@ -91,13 +81,14 @@ document.addEventListener('DOMContentLoaded', () => {
         populateConversionOptions(fileExtension);
     }
     
-    // Função para popular as opções de conversão
     function populateConversionOptions(extension) {
-        targetFormatSelect.innerHTML = ''; // Limpa opções antigas
+        targetFormatSelect.innerHTML = '';
         const possibleFormats = conversionMap[extension] || [];
         
         if (possibleFormats.length === 0) {
-            targetFormatSelect.innerHTML = '<option>Nenhuma conversão disponível</option>';
+            const option = document.createElement('option');
+            option.textContent = 'Nenhuma conversão disponível';
+            targetFormatSelect.appendChild(option);
             convertButton.disabled = true;
         } else {
             possibleFormats.forEach(format => {
@@ -110,15 +101,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Função para resetar a interface
     function resetUI() {
         fileList.innerHTML = '';
-        fileInput.value = ''; // Limpa o input de arquivo
+        fileInput.value = '';
         uploadArea.classList.remove('hidden');
         conversionArea.classList.add('hidden');
     }
 
-    // Evento do botão de converter
+    // --- LÓGICA DE CONEXÃO COM O BACK-END ---
     convertButton.addEventListener('click', () => {
         const selectedFile = fileInput.files[0];
         const targetFormat = targetFormatSelect.value;
@@ -127,41 +117,44 @@ document.addEventListener('DOMContentLoaded', () => {
             alert('Por favor, selecione um arquivo e um formato de destino.');
             return;
         }
-        
-        console.log(`Iniciando conversão de "${selectedFile.name}" para "${targetFormat}"...`);
-        alert(`Simulação: Convertendo ${selectedFile.name} para ${targetFormat}. Verifique o console.`);
 
-        //
-        // ---> PONTO DE INTEGRAÇÃO COM O BACK-END <---
-        //
-        // 1. Criar um objeto FormData para enviar o arquivo.
-        //    const formData = new FormData();
-        //    formData.append('file', selectedFile);
-        //    formData.append('targetFormat', targetFormat);
-        //
-        // 2. Usar a API fetch() para enviar os dados para o seu servidor.
-        //    fetch('URL_DO_SEU_BACKEND/convert', {
-        //        method: 'POST',
-        //        body: formData
-        //    })
-        //    .then(response => response.blob()) // ou response.json() dependendo do que o backend retorna
-        //    .then(blob => {
-        //        // 3. Criar um link de download para o arquivo convertido.
-        //        const url = window.URL.createObjectURL(blob);
-        //        const a = document.createElement('a');
-        //        a.style.display = 'none';
-        //        a.href = url;
-        //        a.download = `convertido.${targetFormat}`;
-        //        document.body.appendChild(a);
-        //        a.click();
-        //        window.URL.revokeObjectURL(url);
-        //        alert('Download iniciado!');
-        //        resetUI();
-        //    })
-        //    .catch(error => {
-        //        console.error('Erro na conversão:', error);
-        //        alert('Ocorreu um erro durante a conversão.');
-        //    });
-        //
+        // Feedback visual: desabilitar o botão e mudar o texto
+        convertButton.disabled = true;
+        convertButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Convertendo...';
+
+        // 1. Criar um objeto FormData para enviar o arquivo
+        const formData = new FormData();
+        formData.append('file', selectedFile); // A chave 'file' deve ser a mesma que o multer espera no back-end
+        formData.append('targetFormat', targetFormat);
+
+        // 2. Usar a API fetch() para enviar os dados para o servidor
+        fetch('http://localhost:3000/api/convert', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => {
+            if (!response.ok) {
+                // Se a resposta do servidor não for de sucesso (ex: erro 400, 500)
+                throw new Error(`Erro do servidor: ${response.statusText}`);
+            }
+            return response.json(); // Converte a resposta do servidor para JSON
+        })
+        .then(data => {
+            // Sucesso! O servidor respondeu.
+            console.log('Resposta do servidor:', data);
+            alert(`Sucesso! Mensagem do servidor: "${data.message}"`);
+            // Por enquanto, apenas resetamos a UI após o sucesso.
+            resetUI();
+        })
+        .catch(error => {
+            // Ocorreu um erro na comunicação ou no servidor
+            console.error('Erro na conversão:', error);
+            alert('Ocorreu um erro durante a comunicação com o servidor. Verifique o console.');
+        })
+        .finally(() => {
+            // Reabilitar o botão, independentemente de ter dado certo ou errado
+            convertButton.disabled = false;
+            convertButton.innerHTML = 'Converter';
+        });
     });
 });

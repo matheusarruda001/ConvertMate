@@ -1,0 +1,8 @@
+# Dependências do Node.js
+node_modules/
+
+# Arquivos de ambiente com senhas ou chaves de API
+.env
+
+# Pasta de uploads temporários
+uploads/
