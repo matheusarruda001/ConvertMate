@@ -1,0 +1,285 @@
+/* Importação de fontes e variáveis de cor */
+:root {
+    --primary-color: #4A90E2; /* Azul */
+    --secondary-color: #50E3C2; /* Verde-água */
+    --dark-color: #333;
+    --light-gray-color: #f4f4f4;
+    --border-color: #ddd;
+    --text-color: #555;
+}
+
+body {
+    font-family: 'Poppins', sans-serif;
+    margin: 0;
+    background-color: #fff;
+    color: var(--text-color);
+    line-height: 1.6;
+}
+
+.container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+/* Header */
+header {
+    background: #fff;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    padding: 1rem 0;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
+header .container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logo {
+    font-weight: 700;
+    font-size: 1.8rem;
+    color: var(--primary-color);
+}
+
+.logo-img {
+  height: 90px;
+  width: auto;
+  margin-right: 15px;
+  vertical-align: middle;
+}
+
+
+header nav a {
+    text-decoration: none;
+    color: var(--dark-color);
+    margin-left: 20px;
+    font-weight: 500;
+    transition: color 0.3s ease;
+}
+
+header nav a:hover {
+    color: var(--primary-color);
+}
+
+/* Main Content */
+main section {
+    padding: 60px 0;
+    text-align: center;
+}
+
+h2 {
+    font-size: 2.5rem;
+    color: var(--dark-color);
+    margin-bottom: 10px;
+}
+
+.subtitle {
+    font-size: 1.1rem;
+    max-width: 600px;
+    margin: 0 auto 40px auto;
+}
+
+/* Upload Area */
+#drop-zone {
+    border: 3px dashed var(--border-color);
+    border-radius: 15px;
+    padding: 60px 40px;
+    background: var(--light-gray-color);
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+#drop-zone.dragover {
+    border-color: var(--primary-color);
+    background: #e9f2fe;
+}
+
+#drop-zone i {
+    font-size: 4rem;
+    color: var(--primary-color);
+    margin-bottom: 20px;
+}
+
+#drop-zone p {
+    font-size: 1.2rem;
+    font-weight: 500;
+    color: var(--dark-color);
+    margin: 0;
+}
+
+#drop-zone span {
+    display: block;
+    margin: 15px 0;
+    color: #999;
+}
+
+/* Buttons and Controls */
+.button {
+    display: inline-block;
+    background: var(--primary-color);
+    color: #fff;
+    padding: 12px 30px;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background 0.3s ease, transform 0.2s ease;
+}
+
+.button:hover {
+    background: #3a7bc8;
+    transform: translateY(-2px);
+}
+
+.button.primary {
+    background: var(--secondary-color);
+    color: var(--dark-color);
+}
+.button.primary:hover {
+    background: #48d1b1;
+}
+
+/* Conversion Area */
+.hidden {
+    display: none !important;
+}
+
+#conversion-area {
+    background: var(--light-gray-color);
+    border-radius: 15px;
+    padding: 30px;
+    margin-top: 30px;
+    text-align: left;
+}
+
+#file-list .file-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #fff;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    border: 1px solid var(--border-color);
+}
+
+.file-info {
+    display: flex;
+    align-items: center;
+}
+
+.file-info i {
+    font-size: 1.5rem;
+    color: var(--primary-color);
+    margin-right: 15px;
+}
+
+.file-name {
+    font-weight: 500;
+    color: var(--dark-color);
+}
+
+.file-size {
+    font-size: 0.9rem;
+    color: #888;
+}
+
+.remove-file {
+    background: none;
+    border: none;
+    color: #f44336;
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: color 0.3s ease;
+}
+.remove-file:hover {
+    color: #d32f2f;
+}
+
+#conversion-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border-color);
+}
+
+.format-select-wrapper label {
+    margin-right: 10px;
+    font-weight: 500;
+}
+
+#target-format {
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    font-size: 1rem;
+}
+
+/* How-to Section */
+#how-to-section {
+    background-color: var(--light-gray-color);
+}
+
+h3 {
+    font-size: 2rem;
+    color: var(--dark-color);
+    margin-bottom: 40px;
+}
+
+.steps {
+    display: flex;
+    justify-content: space-between;
+    gap: 30px;
+}
+
+.step {
+    flex: 1;
+}
+
+.icon-wrapper {
+    background: var(--primary-color);
+    color: #fff;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0 auto 20px auto;
+    font-size: 2rem;
+}
+
+.step h4 {
+    font-size: 1.2rem;
+    color: var(--dark-color);
+    margin-bottom: 10px;
+}
+
+/* Footer */
+footer {
+    background-color: var(--dark-color);
+    color: #fff;
+    text-align: center;
+    padding: 20px 0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .steps {
+        flex-direction: column;
+    }
+    header .container, #conversion-controls {
+        flex-direction: column;
+        gap: 15px;
+    }
+    header nav a {
+        margin: 0 10px;
+    }
+}

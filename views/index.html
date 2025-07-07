@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ConvertMate - Conversor de Arquivos Online</title>
+    <link rel="icon" type="image/x-icon" href="../img/favicon.ico">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome (para ícones) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Nosso CSS -->
+    <link rel="stylesheet" href="../public/css/style.css">
+</head>
+<body>
+
+    <header>
+        <div class="container">
+            <h1 class="logo"><img src="../img/logo.png" class="logo-img">ConvertMate</h1>
+            <nav>
+                <a href="#">Início</a>
+                <a href="#">Tipos de Conversão</a>
+                <a href="#">Preços</a>
+                <a href="#">API</a>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <section id="converter-section" class="container">
+            <h2>Conversor de Arquivos Rápido e Simples</h2>
+            <p class="subtitle">Converta seus documentos, imagens e vídeos sem complicação.</p>
+
+            <!-- Área de Upload -->
+            <div id="upload-area">
+                <div id="drop-zone">
+                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                    <p>Arraste e solte seus arquivos aqui</p>
+                    <span>ou</span>
+                    <label for="file-input" class="button">Escolher Arquivos</label>
+                    <input type="file" id="file-input" multiple hidden>
+                </div>
+            </div>
+
+            <!-- Área de Conversão (aparece após selecionar o arquivo) -->
+            <div id="conversion-area" class="hidden">
+                <div id="file-list">
+                    <!-- Arquivos selecionados serão adicionados aqui pelo JS -->
+                </div>
+                <div id="conversion-controls">
+                     <div class="format-select-wrapper">
+                        <label for="target-format">Converter para:</label>
+                        <select id="target-format">
+                            <!-- Opções serão adicionadas aqui pelo JS -->
+                        </select>
+                    </div>
+                    <button id="convert-button" class="button primary">Converter</button>
+                </div>
+            </div>
+
+        </section>
+
+        <section id="how-to-section" class="container">
+            <h3>Como funciona? É fácil!</h3>
+            <div class="steps">
+                <div class="step">
+                    <div class="icon-wrapper"><i class="fa-solid fa-file-arrow-up"></i></div>
+                    <h4>1. Escolha o Arquivo</h4>
+                    <p>Clique no botão ou arraste o arquivo que deseja converter para a área indicada.</p>
+                </div>
+                <div class="step">
+                    <div class="icon-wrapper"><i class="fa-solid fa-shuffle"></i></div>
+                    <h4>2. Selecione o Formato</h4>
+                    <p>Escolha o formato de destino para o qual seu arquivo será convertido.</p>
+                </div>
+                <div class="step">
+                    <div class="icon-wrapper"><i class="fa-solid fa-download"></i></div>
+                    <h4>3. Baixe o Resultado</h4>
+                    <p>Clique em "Converter" e, em segundos, seu novo arquivo estará pronto para download.</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>© 2025 ConvertMate. Todos os direitos reservados.</p>
+        </div>
+    </footer>
+
+    <!-- Nosso JavaScript -->
+    <script src="js/script.js"></script>
+</body>
+</html>
