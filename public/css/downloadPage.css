@@ -1,0 +1,25 @@
+        /* Estilos específicos para esta página */
+        .download-card {
+            background-color: var(--light-gray-color);
+            border-radius: 15px;
+            padding: 40px;
+            margin-top: 40px;
+            text-align: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+        .download-card i {
+            font-size: 4rem;
+            color: var(--secondary-color);
+        }
+        .download-card h2 {
+            margin-top: 20px;
+            color: var(--dark-color);
+        }
+        .download-card .filename {
+            font-weight: 600;
+            color: var(--primary-color);
+            word-break: break-all;
+        }
+        .download-card .actions {
+            margin-top: 30px;
+        }

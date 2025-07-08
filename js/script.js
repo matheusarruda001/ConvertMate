@@ -12,17 +12,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Mapeamento de conversões possíveis
     const conversionMap = {
-        'pdf': ['docx', 'jpeg', 'png'],
-        'docx': ['pdf'],
-        'mkv': ['mp4'],
-        'mov': ['mp4'],
-        'jpeg': ['png', 'pdf', 'webp'],
-        'jpg': ['png', 'pdf', 'webp'],
-        'png': ['jpeg', 'jpg', 'pdf', 'webp']
+      'pdf': ['jpeg', 'png'], // <--- REMOVA o 'docx' daqui
+      'docx': ['pdf'],
+      'mkv': ['mp4'],
+      'mov': ['mp4'],
+      'jpeg': ['png', 'pdf', 'webp'],
+      'jpg': ['png', 'pdf', 'webp'],
+      'png': ['jpeg', 'jpg', 'pdf', 'webp']
     };
-
-    // Evento de clique para abrir o seletor de arquivos
-    dropZone.addEventListener('click', () => fileInput.click());
 
     // Evento de mudança no input de arquivo
     fileInput.addEventListener('change', (e) => {
@@ -110,51 +107,75 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- LÓGICA DE CONEXÃO COM O BACK-END ---
     convertButton.addEventListener('click', () => {
-        const selectedFile = fileInput.files[0];
-        const targetFormat = targetFormatSelect.value;
-        
-        if (!selectedFile || !targetFormat) {
-            alert('Por favor, selecione um arquivo e um formato de destino.');
-            return;
-        }
+      const selectedFile = fileInput.files[0];
+      const targetFormat = targetFormatSelect.value;
 
-        // Feedback visual: desabilitar o botão e mudar o texto
-        convertButton.disabled = true;
-        convertButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Convertendo...';
+      if (!selectedFile || !targetFormat) {
+        alert("Por favor, selecione um arquivo e um formato de destino.");
+        return;
+      }
 
-        // 1. Criar um objeto FormData para enviar o arquivo
-        const formData = new FormData();
-        formData.append('file', selectedFile); // A chave 'file' deve ser a mesma que o multer espera no back-end
-        formData.append('targetFormat', targetFormat);
+      // Feedback visual: desabilitar o botão e mudar o texto
+      convertButton.disabled = true;
+      convertButton.innerHTML =
+        '<i class="fa-solid fa-spinner fa-spin"></i> Convertendo...';
 
-        // 2. Usar a API fetch() para enviar os dados para o servidor
-        fetch('http://localhost:3000/api/convert', {
-            method: 'POST',
-            body: formData
+      // 1. Criar um objeto FormData para enviar o arquivo
+      const formData = new FormData();
+      formData.append("file", selectedFile); // A chave 'file' deve ser a mesma que o multer espera no back-end
+      formData.append("targetFormat", targetFormat);
+
+      // --- DENTRO DO js/script.js, substitua apenas esta parte ---
+
+      // 2. Usar a API fetch() para enviar os dados para o servidor
+      fetch("http://localhost:3000/api/convert", {
+        method: "POST",
+        body: formData,
+      })
+        .then((response) => {
+          // Se a resposta NÃO for OK, algo deu errado no servidor
+          if (!response.ok) {
+            // Tentamos ler o corpo do erro como JSON para mostrar uma mensagem mais clara
+            return response.json().then((err) => {
+              throw new Error(err.error || "Erro no servidor");
+            });
+          }
+          // Se a resposta for OK, o corpo da resposta é o arquivo para download
+          return response.blob();
         })
-        .then(response => {
-            if (!response.ok) {
-                // Se a resposta do servidor não for de sucesso (ex: erro 400, 500)
-                throw new Error(`Erro do servidor: ${response.statusText}`);
-            }
-            return response.json(); // Converte a resposta do servidor para JSON
+        .then((blob) => {
+          // Sucesso! O servidor enviou o arquivo convertido.
+          // 3. Criar um link de download para o arquivo que recebemos (blob)
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.style.display = "none";
+          a.href = url;
+
+          // Define o nome do arquivo para o download
+          const originalName = fileInput.files[0].name
+            .split(".")
+            .slice(0, -1)
+            .join(".");
+          a.download = `${originalName}.${targetFormat}`;
+
+          document.body.appendChild(a);
+          a.click();
+
+          // Limpa a URL do objeto para liberar memória
+          window.URL.revokeObjectURL(url);
+
+          alert("Conversão concluída! O download deve começar em breve.");
+          resetUI();
         })
-        .then(data => {
-            // Sucesso! O servidor respondeu.
-            console.log('Resposta do servidor:', data);
-            alert(`Sucesso! Mensagem do servidor: "${data.message}"`);
-            // Por enquanto, apenas resetamos a UI após o sucesso.
-            resetUI();
-        })
-        .catch(error => {
-            // Ocorreu um erro na comunicação ou no servidor
-            console.error('Erro na conversão:', error);
-            alert('Ocorreu um erro durante a comunicação com o servidor. Verifique o console.');
+        .catch((error) => {
+          // Ocorreu um erro na comunicação ou o servidor retornou um erro
+          console.error("Erro na conversão:", error);
+          alert(`Ocorreu um erro: ${error.message}`);
         })
         .finally(() => {
-            // Reabilitar o botão, independentemente de ter dado certo ou errado
-            convertButton.disabled = false;
-            convertButton.innerHTML = 'Converter';
+          // Reabilitar o botão, independentemente de ter dado certo ou errado
+          convertButton.disabled = false;
+          convertButton.innerHTML = "Converter";
         });
     });
 });

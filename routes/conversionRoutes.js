@@ -1,18 +1,19 @@
-// --- routes/conversionRoutes.js ---
+// --- routes/conversionRoutes.js (VERSÃO FINAL CORRIGIDA) ---
 
 const express = require('express');
 const multer = require('multer');
-const router = express.Router();
+const fs = require('fs');
+const path = require('path');
+const { convertImage, convertDocument } = require('../services/conversionService');
 
-// Configuração do Multer para salvar os arquivos na pasta /uploads
+const router = express.Router();
 const upload = multer({ dest: 'uploads/' });
 
-// Rota para lidar com a conversão de arquivos
-// POST /api/convert
-router.post('/convert', upload.single('file'), (req, res) => {
-    // 'upload.single('file')' processa um único arquivo enviado no campo 'file'
-    // O arquivo fica disponível em req.file e os outros dados em req.body
+const imageFormats = ['jpeg', 'jpg', 'png', 'webp'];
+const documentFormats = ['pdf', 'docx'];
 
+// AQUI ESTÁ A CORREÇÃO: Adicionamos 'upload.single('file')' de volta
+router.post('/convert', upload.single('file'), async (req, res) => {
     const uploadedFile = req.file;
     const targetFormat = req.body.targetFormat;
 
@@ -20,16 +21,46 @@ router.post('/convert', upload.single('file'), (req, res) => {
         return res.status(400).json({ error: 'Nenhum arquivo enviado.' });
     }
 
-    console.log('Arquivo recebido:', uploadedFile.originalname);
-    console.log('Converter para:', targetFormat);
+    const fileExtension = path.extname(uploadedFile.originalname).slice(1).toLowerCase();
 
-    // --- LÓGICA DE CONVERSÃO ENTRARÁ AQUI ---
-    // Por enquanto, vamos apenas simular um sucesso.
+    let outputPath;
 
-    res.json({ 
-        success: true, 
-        message: `Arquivo ${uploadedFile.originalname} recebido. Pronto para converter para ${targetFormat}.` 
-    });
+    try {
+        if (imageFormats.includes(fileExtension) && imageFormats.includes(targetFormat)) {
+            console.log('Direcionando para o conversor de IMAGEM.');
+            outputPath = await convertImage(uploadedFile, targetFormat);
+
+        } else if (documentFormats.includes(fileExtension) && documentFormats.includes(targetFormat)) {
+            console.log('Direcionando para o conversor de DOCUMENTO.');
+            outputPath = await convertDocument(uploadedFile, targetFormat);
+
+        } else {
+            throw new Error(`Conversão de .${fileExtension} para .${targetFormat} ainda não é suportada.`);
+        }
+
+        res.download(outputPath, (err) => {
+            if (err) {
+                console.error('Erro ao enviar o arquivo para download:', err);
+            }
+            fs.unlink(uploadedFile.path, (err) => {
+                if (err) console.error("Erro ao deletar arquivo original:", err);
+                else console.log("Arquivo original deletado:", uploadedFile.path);
+            });
+            fs.unlink(outputPath, (err) => {
+                if (err) console.error("Erro ao deletar arquivo convertido:", err);
+                else console.log("Arquivo convertido deletado:", outputPath);
+            });
+        });
+
+    } catch (error) {
+        console.error('Erro no processo de conversão:', error.message);
+        // Enviamos um JSON de erro para o front-end
+        res.status(500).json({ success: false, error: error.message });
+
+        fs.unlink(uploadedFile.path, (err) => {
+            if (err) console.error("Erro ao deletar arquivo original após falha:", err);
+        });
+    }
 });
 
 module.exports = router;
