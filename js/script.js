@@ -179,3 +179,31 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 });
+
+// Lógica para esconder/mostrar o header ao rolar a página
+document.addEventListener('DOMContentLoaded', () => {
+    // A lógica do conversor de arquivos que já existe fica aqui em cima...
+
+    // --- NOVA LÓGICA DO HEADER ---
+    const header = document.querySelector('header');
+    let lastScrollTop = 0; // Armazena a última posição de rolagem
+
+    window.addEventListener('scroll', function() {
+        // Pega a posição atual da rolagem vertical
+        let scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+
+        if (scrollTop > lastScrollTop) {
+            // Rolando para BAIXO
+            // Esconde o header movendo-o para cima (fora da tela)
+            // A altura do header é de aproximadamente -100px
+            header.style.top = '-100px'; 
+        } else {
+            // Rolando para CIMA
+            // Mostra o header novamente
+            header.style.top = '0';
+        }
+
+        // Atualiza a última posição de rolagem
+        lastScrollTop = scrollTop <= 0 ? 0 : scrollTop; 
+    }, false);
+});

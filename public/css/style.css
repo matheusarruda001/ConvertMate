@@ -6,12 +6,13 @@
     --light-gray-color: #f4f4f4;
     --border-color: #ddd;
     --text-color: #555;
+    --page-background-color: #f7f8fa; /* <-- NOVA COR PARA O FUNDO DA PÁGINA */
 }
 
 body {
     font-family: 'Poppins', sans-serif;
     margin: 0;
-    background-color: #fff;
+    background-color: var(--page-background-color); /* <-- ALTERADO */
     color: var(--text-color);
     line-height: 1.6;
 }
@@ -24,12 +25,13 @@ body {
 
 /* Header */
 header {
-    background: #fff;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-    padding: 1rem 0;
+    background: #fff; /* <-- Esta linha garante que não haja transparência. Já está correta. */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    padding: 0.5rem 0;
     position: sticky;
     top: 0;
     z-index: 1000;
+    transition: top 0.3s ease-in-out; /* <-- NOVA LINHA: Para a animação de esconder/mostrar */
 }
 
 header .container {
@@ -45,7 +47,7 @@ header .container {
 }
 
 .logo-img {
-  height: 90px;
+  height: 50px;
   width: auto;
   margin-right: 15px;
   vertical-align: middle;
