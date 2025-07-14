@@ -29,9 +29,105 @@
     </header>
 
     <main>
-        <section id="converter-section" class="container">
+        <section id="hero-section" class="container">
             <h2>Conversor de Arquivos Rápido e Simples</h2>
-            <p class="subtitle">Converta seus documentos, imagens e vídeos sem complicação.</p>
+            <p class="subtitle">Converta seus documentos, imagens, vídeos e áudios sem complicação.</p>
+        </section>
+
+        <!-- Categories Section -->
+        <section id="categories-section" class="container">
+            <div class="categories-grid">
+                <!-- Documents Category -->
+                <div class="category-card" data-category="documents">
+                    <div class="category-icon documents">
+                        <i class="fa-solid fa-file-text"></i>
+                    </div>
+                    <div class="category-content">
+                        <h3>Conversor de documentos</h3>
+                        <p>Converta seus documentos entre PDF, DOCX, DOC e XLSX de forma rápida e segura.</p>
+                        <div class="category-formats">
+                            <span class="format-tag">PDF</span>
+                            <span class="format-tag">DOCX</span>
+                            <span class="format-tag">DOC</span>
+                            <span class="format-tag">XLSX</span>
+                        </div>
+                    </div>
+                    <div class="category-arrow">
+                        <i class="fa-solid fa-chevron-right"></i>
+                    </div>
+                </div>
+
+                <!-- Images Category -->
+                <div class="category-card" data-category="images">
+                    <div class="category-icon images">
+                        <i class="fa-solid fa-image"></i>
+                    </div>
+                    <div class="category-content">
+                        <h3>Conversor de imagens</h3>
+                        <p>Transforme suas imagens entre PNG, JPG, JPEG e WEBP mantendo a qualidade.</p>
+                        <div class="category-formats">
+                            <span class="format-tag">PNG</span>
+                            <span class="format-tag">JPG</span>
+                            <span class="format-tag">JPEG</span>
+                            <span class="format-tag">WEBP</span>
+                        </div>
+                    </div>
+                    <div class="category-arrow">
+                        <i class="fa-solid fa-chevron-right"></i>
+                    </div>
+                </div>
+
+                <!-- Videos Category -->
+                <div class="category-card" data-category="videos">
+                    <div class="category-icon videos">
+                        <i class="fa-solid fa-video"></i>
+                    </div>
+                    <div class="category-content">
+                        <h3>Conversor de vídeos</h3>
+                        <p>Converta vídeos entre MP4, AVI, MOV, MKV e WEBM com facilidade.</p>
+                        <div class="category-formats">
+                            <span class="format-tag">MP4</span>
+                            <span class="format-tag">AVI</span>
+                            <span class="format-tag">MOV</span>
+                            <span class="format-tag">MKV</span>
+                            <span class="format-tag">WEBM</span>
+                        </div>
+                    </div>
+                    <div class="category-arrow">
+                        <i class="fa-solid fa-chevron-right"></i>
+                    </div>
+                </div>
+
+                <!-- Audio Category -->
+                <div class="category-card" data-category="audio">
+                    <div class="category-icon audio">
+                        <i class="fa-solid fa-music"></i>
+                    </div>
+                    <div class="category-content">
+                        <h3>Conversor de áudio</h3>
+                        <p>Transforme seus arquivos de áudio entre MP3, WAV e AAC preservando a qualidade.</p>
+                        <div class="category-formats">
+                            <span class="format-tag">MP3</span>
+                            <span class="format-tag">WAV</span>
+                            <span class="format-tag">AAC</span>
+                        </div>
+                    </div>
+                    <div class="category-arrow">
+                        <i class="fa-solid fa-chevron-right"></i>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Converter Section (Hidden initially) -->
+        <section id="converter-section" class="container hidden">
+            <div class="converter-header">
+                <button id="back-to-categories" class="back-button">
+                    <i class="fa-solid fa-arrow-left"></i> Voltar às categorias
+                </button>
+                <h3 id="converter-title">Conversor de Arquivos</h3>
+                <p id="converter-description" class="subtitle">Selecione seus arquivos para conversão.</p>
+            </div>
 
             <!-- Área de Upload -->
             <div id="upload-area">
@@ -66,19 +162,24 @@
             <h3>Como funciona? É fácil!</h3>
             <div class="steps">
                 <div class="step">
+                    <div class="icon-wrapper"><i class="fa-solid fa-mouse-pointer"></i></div>
+                    <h4>1. Escolha a Categoria</h4>
+                    <p>Selecione o tipo de arquivo que deseja converter: documentos, imagens, vídeos ou áudio.</p>
+                </div>
+                <div class="step">
                     <div class="icon-wrapper"><i class="fa-solid fa-file-arrow-up"></i></div>
-                    <h4>1. Escolha o Arquivo</h4>
-                    <p>Clique no botão ou arraste o arquivo que deseja converter para a área indicada.</p>
+                    <h4>2. Envie seus Arquivos</h4>
+                    <p>Clique no botão ou arraste os arquivos que deseja converter para a área indicada.</p>
                 </div>
                 <div class="step">
                     <div class="icon-wrapper"><i class="fa-solid fa-shuffle"></i></div>
-                    <h4>2. Selecione o Formato</h4>
-                    <p>Escolha o formato de destino para o qual seu arquivo será convertido.</p>
+                    <h4>3. Selecione o Formato</h4>
+                    <p>Escolha o formato de destino para o qual seus arquivos serão convertidos.</p>
                 </div>
                 <div class="step">
                     <div class="icon-wrapper"><i class="fa-solid fa-download"></i></div>
-                    <h4>3. Baixe o Resultado</h4>
-                    <p>Clique em "Converter" e, em segundos, seu novo arquivo estará pronto para download.</p>
+                    <h4>4. Baixe os Resultados</h4>
+                    <p>Clique em "Converter" e baixe seus arquivos convertidos na página de downloads.</p>
                 </div>
             </div>
         </section>

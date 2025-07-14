@@ -1,7 +1,12 @@
-// --- START OF FILE js/script.js ---
-
 document.addEventListener('DOMContentLoaded', () => {
     // Selecionando os elementos do DOM
+    const categoriesSection = document.getElementById('categories-section');
+    const converterSection = document.getElementById('converter-section');
+    const categoryCards = document.querySelectorAll('.category-card');
+    const backButton = document.getElementById('back-to-categories');
+    const converterTitle = document.getElementById('converter-title');
+    const converterDescription = document.getElementById('converter-description');
+    
     const dropZone = document.getElementById('drop-zone');
     const fileInput = document.getElementById('file-input');
     const uploadArea = document.getElementById('upload-area');
@@ -10,16 +15,104 @@ document.addEventListener('DOMContentLoaded', () => {
     const targetFormatSelect = document.getElementById('target-format');
     const convertButton = document.getElementById('convert-button');
 
-    // Mapeamento de conversões possíveis
-    const conversionMap = {
-      'pdf': ['jpeg', 'png'], // <--- REMOVA o 'docx' daqui
-      'docx': ['pdf'],
-      'mkv': ['mp4'],
-      'mov': ['mp4'],
-      'jpeg': ['png', 'pdf', 'webp'],
-      'jpg': ['png', 'pdf', 'webp'],
-      'png': ['jpeg', 'jpg', 'pdf', 'webp']
+    // Variável para armazenar categoria atual e arquivos selecionados
+    let currentCategory = null;
+    let selectedFiles = [];
+
+    // Mapeamento de conversões por categoria
+    const categoryConversions = {
+        documents: {
+            title: 'Conversor de Documentos',
+            description: 'Converta seus documentos entre diferentes formatos.',
+            formats: {
+                'pdf': ['docx', 'doc'],
+                'docx': ['pdf', 'doc'],
+                'doc': ['pdf', 'docx'],
+                'xlsx': ['pdf']
+            },
+            acceptedTypes: '.pdf,.docx,.doc,.xlsx'
+        },
+        images: {
+            title: 'Conversor de Imagens',
+            description: 'Transforme suas imagens mantendo a qualidade.',
+            formats: {
+                'jpeg': ['png', 'jpg', 'webp'],
+                'jpg': ['png', 'jpeg', 'webp'],
+                'png': ['jpeg', 'jpg', 'webp'],
+                'webp': ['png', 'jpg', 'jpeg']
+            },
+            acceptedTypes: '.jpeg,.jpg,.png,.webp'
+        },
+        videos: {
+            title: 'Conversor de Vídeos',
+            description: 'Converta vídeos entre diferentes formatos.',
+            formats: {
+                'mp4': ['avi', 'mov', 'mkv', 'webm'],
+                'avi': ['mp4', 'mov', 'mkv', 'webm'],
+                'mov': ['mp4', 'avi', 'mkv', 'webm'],
+                'mkv': ['mp4', 'avi', 'mov', 'webm'],
+                'webm': ['mp4', 'avi', 'mov', 'mkv']
+            },
+            acceptedTypes: '.mp4,.avi,.mov,.mkv,.webm'
+        },
+        audio: {
+            title: 'Conversor de Áudio',
+            description: 'Transforme seus arquivos de áudio preservando a qualidade.',
+            formats: {
+                'mp3': ['wav', 'aac'],
+                'wav': ['mp3', 'aac'],
+                'aac': ['mp3', 'wav']
+            },
+            acceptedTypes: '.mp3,.wav,.aac'
+        }
     };
+
+    // Event listeners para cards de categoria
+    categoryCards.forEach(card => {
+        card.addEventListener('click', () => {
+            const category = card.dataset.category;
+            selectCategory(category);
+        });
+    });
+
+    // Event listener para botão voltar
+    backButton.addEventListener('click', () => {
+        showCategories();
+    });
+
+    function selectCategory(category) {
+        currentCategory = category;
+        const categoryData = categoryConversions[category];
+        
+        // Atualizar título e descrição
+        converterTitle.textContent = categoryData.title;
+        converterDescription.textContent = categoryData.description;
+        
+        // Configurar tipos aceitos no input
+        fileInput.setAttribute('accept', categoryData.acceptedTypes);
+        
+        // Mostrar seção de conversão
+        categoriesSection.classList.add('hidden');
+        converterSection.classList.remove('hidden');
+        
+        // Reset do estado
+        resetUploadArea();
+    }
+
+    function showCategories() {
+        categoriesSection.classList.remove('hidden');
+        converterSection.classList.add('hidden');
+        currentCategory = null;
+        resetUploadArea();
+    }
+
+    function resetUploadArea() {
+        selectedFiles = [];
+        fileList.innerHTML = '';
+        fileInput.value = '';
+        uploadArea.classList.remove('hidden');
+        conversionArea.classList.add('hidden');
+    }
 
     // Evento de mudança no input de arquivo
     fileInput.addEventListener('change', (e) => {
@@ -44,18 +137,42 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     function handleFiles(files) {
-        if (files.length === 0) return;
+        if (files.length === 0 || !currentCategory) return;
+        
+        // Filtrar arquivos baseado na categoria
+        const categoryData = categoryConversions[currentCategory];
+        const validFiles = Array.from(files).filter(file => {
+            const extension = file.name.split('.').pop().toLowerCase();
+            return Object.keys(categoryData.formats).includes(extension);
+        });
+
+        if (validFiles.length === 0) {
+            alert(`Por favor, selecione arquivos válidos para ${categoryData.title.toLowerCase()}.`);
+            return;
+        }
+
+        selectedFiles = validFiles;
         fileList.innerHTML = ''; 
-        const file = files[0];
-        displayFile(file);
+        
+        selectedFiles.forEach((file, index) => {
+            displayFile(file, index);
+        });
+        
         uploadArea.classList.add('hidden');
         conversionArea.classList.remove('hidden');
+        
+        // Atualizar opções de conversão baseado no primeiro arquivo
+        if (selectedFiles.length > 0) {
+            const firstFileExtension = selectedFiles[0].name.split('.').pop().toLowerCase();
+            populateConversionOptions(firstFileExtension);
+        }
     }
 
-    function displayFile(file) {
+    function displayFile(file, index) {
         const fileExtension = file.name.split('.').pop().toLowerCase();
         const fileItem = document.createElement('div');
         fileItem.className = 'file-item';
+        fileItem.dataset.index = index;
         const fileSize = (file.size / 1024 / 1024).toFixed(2); // em MB
 
         fileItem.innerHTML = `
@@ -66,21 +183,42 @@ document.addEventListener('DOMContentLoaded', () => {
                     <span class="file-size">${fileSize} MB</span>
                 </div>
             </div>
-            <button class="remove-file" title="Remover arquivo">×</button>
+            <button class="remove-file" title="Remover arquivo" data-index="${index}">×</button>
         `;
         
         fileList.appendChild(fileItem);
         
-        fileItem.querySelector('.remove-file').addEventListener('click', () => {
-            resetUI();
+        fileItem.querySelector('.remove-file').addEventListener('click', (e) => {
+            const indexToRemove = parseInt(e.target.dataset.index);
+            removeFile(indexToRemove);
         });
+    }
 
-        populateConversionOptions(fileExtension);
+    function removeFile(index) {
+        selectedFiles.splice(index, 1);
+        
+        if (selectedFiles.length === 0) {
+            resetUploadArea();
+        } else {
+            // Re-renderizar lista de arquivos
+            fileList.innerHTML = '';
+            selectedFiles.forEach((file, newIndex) => {
+                displayFile(file, newIndex);
+            });
+            
+            // Atualizar opções de conversão
+            const firstFileExtension = selectedFiles[0].name.split('.').pop().toLowerCase();
+            populateConversionOptions(firstFileExtension);
+        }
     }
     
     function populateConversionOptions(extension) {
         targetFormatSelect.innerHTML = '';
-        const possibleFormats = conversionMap[extension] || [];
+        
+        if (!currentCategory) return;
+        
+        const categoryData = categoryConversions[currentCategory];
+        const possibleFormats = categoryData.formats[extension] || [];
         
         if (possibleFormats.length === 0) {
             const option = document.createElement('option');
@@ -98,85 +236,59 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function resetUI() {
-        fileList.innerHTML = '';
-        fileInput.value = '';
-        uploadArea.classList.remove('hidden');
-        conversionArea.classList.add('hidden');
-    }
+    // Lógica de conversão
+    convertButton.addEventListener('click', async () => {
+        const targetFormat = targetFormatSelect.value;
 
-    // --- LÓGICA DE CONEXÃO COM O BACK-END ---
-    convertButton.addEventListener('click', () => {
-      const selectedFile = fileInput.files[0];
-      const targetFormat = targetFormatSelect.value;
+        if (selectedFiles.length === 0 || !targetFormat || !currentCategory) {
+            alert("Por favor, selecione pelo menos um arquivo e um formato de destino.");
+            return;
+        }
 
-      if (!selectedFile || !targetFormat) {
-        alert("Por favor, selecione um arquivo e um formato de destino.");
-        return;
-      }
+        // Feedback visual
+        convertButton.disabled = true;
+        convertButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Convertendo...';
 
-      // Feedback visual: desabilitar o botão e mudar o texto
-      convertButton.disabled = true;
-      convertButton.innerHTML =
-        '<i class="fa-solid fa-spinner fa-spin"></i> Convertendo...';
-
-      // 1. Criar um objeto FormData para enviar o arquivo
-      const formData = new FormData();
-      formData.append("file", selectedFile); // A chave 'file' deve ser a mesma que o multer espera no back-end
-      formData.append("targetFormat", targetFormat);
-
-      // --- DENTRO DO js/script.js, substitua apenas esta parte ---
-
-      // 2. Usar a API fetch() para enviar os dados para o servidor
-      fetch("http://localhost:3000/api/convert", {
-        method: "POST",
-        body: formData,
-      })
-        .then((response) => {
-          // Se a resposta NÃO for OK, algo deu errado no servidor
-          if (!response.ok) {
-            // Tentamos ler o corpo do erro como JSON para mostrar uma mensagem mais clara
-            return response.json().then((err) => {
-              throw new Error(err.error || "Erro no servidor");
+        try {
+            // Criar FormData para enviar múltiplos arquivos
+            const formData = new FormData();
+            
+            // Adicionar todos os arquivos
+            selectedFiles.forEach((file, index) => {
+                formData.append('files', file);
             });
-          }
-          // Se a resposta for OK, o corpo da resposta é o arquivo para download
-          return response.blob();
-        })
-        .then((blob) => {
-          // Sucesso! O servidor enviou o arquivo convertido.
-          // 3. Criar um link de download para o arquivo que recebemos (blob)
-          const url = window.URL.createObjectURL(blob);
-          const a = document.createElement("a");
-          a.style.display = "none";
-          a.href = url;
+            
+            formData.append('targetFormat', targetFormat);
+            formData.append('category', currentCategory);
 
-          // Define o nome do arquivo para o download
-          const originalName = fileInput.files[0].name
-            .split(".")
-            .slice(0, -1)
-            .join(".");
-          a.download = `${originalName}.${targetFormat}`;
+            // Enviar para o servidor
+            const response = await fetch('/api/convert-multiple', {
+                method: 'POST',
+                body: formData,
+            });
 
-          document.body.appendChild(a);
-          a.click();
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Erro no servidor');
+            }
 
-          // Limpa a URL do objeto para liberar memória
-          window.URL.revokeObjectURL(url);
+            const result = await response.json();
+            
+            if (result.success && result.sessionId) {
+                // Redirecionar para página de downloads
+                window.location.href = `/views/downloads.html?session=${result.sessionId}`;
+            } else {
+                throw new Error(result.error || 'Erro na conversão');
+            }
 
-          alert("Conversão concluída! O download deve começar em breve.");
-          resetUI();
-        })
-        .catch((error) => {
-          // Ocorreu um erro na comunicação ou o servidor retornou um erro
-          console.error("Erro na conversão:", error);
-          alert(`Ocorreu um erro: ${error.message}`);
-        })
-        .finally(() => {
-          // Reabilitar o botão, independentemente de ter dado certo ou errado
-          convertButton.disabled = false;
-          convertButton.innerHTML = "Converter";
-        });
+        } catch (error) {
+            console.error('Erro na conversão:', error);
+            alert(`Ocorreu um erro: ${error.message}`);
+        } finally {
+            // Reabilitar o botão
+            convertButton.disabled = false;
+            convertButton.innerHTML = "Converter";
+        }
     });
 });
 

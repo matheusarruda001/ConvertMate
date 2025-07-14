@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Downloads - ConvertMate</title>
+    <link rel="icon" type="image/x-icon" href="../img/favicon.ico">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome (para ícones) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Nosso CSS -->
+    <link rel="stylesheet" href="../public/css/style.css">
+    <link rel="stylesheet" href="../public/css/downloads.css">
+</head>
+<body>
+
+    <header>
+        <div class="container">
+            <h1 class="logo"><img src="../img/logo.png" class="logo-img">ConvertMate</h1>
+            <nav>
+                <a href="index.html">Início</a>
+                <a href="#">Tipos de Conversão</a>
+                <a href="#">Preços</a>
+                <a href="#">API</a>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <section class="container downloads-section">
+            <div class="downloads-header">
+                <h2><i class="fa-solid fa-download"></i> Seus Arquivos Convertidos</h2>
+                <p class="subtitle">Clique no botão de download para baixar cada arquivo convertido.</p>
+            </div>
+
+            <!-- Loading state -->
+            <div id="loading-state" class="loading-container">
+                <div class="loading-spinner">
+                    <i class="fa-solid fa-spinner fa-spin"></i>
+                </div>
+                <p>Carregando seus arquivos convertidos...</p>
+            </div>
+
+            <!-- Downloads list -->
+            <div id="downloads-container" class="downloads-container hidden">
+                <div class="downloads-summary">
+                    <div class="summary-item">
+                        <span class="summary-label">Total de arquivos:</span>
+                        <span id="total-files" class="summary-value">0</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">Convertidos com sucesso:</span>
+                        <span id="success-files" class="summary-value success">0</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">Falhas na conversão:</span>
+                        <span id="error-files" class="summary-value error">0</span>
+                    </div>
+                </div>
+
+                <div id="downloads-list" class="downloads-list">
+                    <!-- Os arquivos serão adicionados aqui dinamicamente -->
+                </div>
+
+                <div class="downloads-actions">
+                    <button id="download-all-btn" class="button primary">
+                        <i class="fa-solid fa-download"></i> Baixar Todos
+                    </button>
+                    <a href="index.html" class="button secondary">
+                        <i class="fa-solid fa-plus"></i> Converter Mais Arquivos
+                    </a>
+                </div>
+            </div>
+
+            <!-- Error state -->
+            <div id="error-state" class="error-container hidden">
+                <div class="error-icon">
+                    <i class="fa-solid fa-exclamation-triangle"></i>
+                </div>
+                <h3>Ops! Algo deu errado</h3>
+                <p id="error-message">Não foi possível carregar os arquivos convertidos.</p>
+                <a href="index.html" class="button primary">
+                    <i class="fa-solid fa-home"></i> Voltar ao Início
+                </a>
+            </div>
+
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>© 2025 ConvertMate. Todos os direitos reservados.</p>
+        </div>
+    </footer>
+
+    <!-- JavaScript da página de downloads -->
+    <script src="../js/downloads.js"></script>
+</body>
+</html>
