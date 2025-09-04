@@ -64,6 +64,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 'aac': ['mp3', 'wav']
             },
             acceptedTypes: '.mp3,.wav,.aac'
+        },
+        compression: {
+            title: 'Diminuir Tamanho',
+            description: 'Reduza o tamanho de seus arquivos mantendo qualidade aceitável.',
+            formats: {
+                'pdf': ['low', 'medium', 'high'],
+                'mp4': ['low', 'medium', 'high'],
+                'avi': ['low', 'medium', 'high'],
+                'mov': ['low', 'medium', 'high'],
+                'mkv': ['low', 'medium', 'high'],
+                'webm': ['low', 'medium', 'high'],
+                'jpeg': ['low', 'medium', 'high'],
+                'jpg': ['low', 'medium', 'high'],
+                'png': ['low', 'medium', 'high'],
+                'webp': ['low', 'medium', 'high']
+            },
+            acceptedTypes: '.pdf,.mp4,.avi,.mov,.mkv,.webm,.jpeg,.jpg,.png,.webp',
+            isCompression: true
         }
     };
 
@@ -87,6 +105,10 @@ document.addEventListener('DOMContentLoaded', () => {
         // Atualizar título e descrição
         converterTitle.textContent = categoryData.title;
         converterDescription.textContent = categoryData.description;
+        
+        // Atualizar texto do botão baseado na categoria
+        const isCompression = categoryData.isCompression;
+        convertButton.textContent = isCompression ? 'Comprimir' : 'Converter';
         
         // Configurar tipos aceitos no input
         fileInput.setAttribute('accept', categoryData.acceptedTypes);
@@ -226,13 +248,74 @@ document.addEventListener('DOMContentLoaded', () => {
             targetFormatSelect.appendChild(option);
             convertButton.disabled = true;
         } else {
-            possibleFormats.forEach(format => {
-                const option = document.createElement('option');
-                option.value = format;
-                option.textContent = format.toUpperCase();
-                targetFormatSelect.appendChild(option);
-            });
+            // Se for categoria de compressão, mostrar opções de qualidade
+            if (categoryData.isCompression) {
+                const qualityOptions = [
+                    { value: 'low', text: 'Baixa Compressão (melhor qualidade)' },
+                    { value: 'medium', text: 'Compressão Média (balanceada)' },
+                    { value: 'high', text: 'Alta Compressão (menor tamanho)' }
+                ];
+                
+                qualityOptions.forEach(quality => {
+                    const option = document.createElement('option');
+                    option.value = quality.value;
+                    option.textContent = quality.text;
+                    targetFormatSelect.appendChild(option);
+                });
+                
+                // Atualizar label para compressão
+                const label = document.querySelector('label[for="target-format"]');
+                if (label) {
+                    label.textContent = 'Nível de compressão:';
+                }
+                
+                // Adicionar informações sobre compressão
+                addCompressionInfo();
+            } else {
+                // Lógica normal para conversão
+                possibleFormats.forEach(format => {
+                    const option = document.createElement('option');
+                    option.value = format;
+                    option.textContent = format.toUpperCase();
+                    targetFormatSelect.appendChild(option);
+                });
+                
+                // Restaurar label para conversão
+                const label = document.querySelector('label[for="target-format"]');
+                if (label) {
+                    label.textContent = 'Converter para:';
+                }
+                
+                // Remover informações de compressão se existirem
+                removeCompressionInfo();
+            }
             convertButton.disabled = false;
+        }
+    }
+
+    function addCompressionInfo() {
+        // Remover info existente
+        removeCompressionInfo();
+        
+        const infoDiv = document.createElement('div');
+        infoDiv.className = 'compression-info';
+        infoDiv.id = 'compression-info';
+        
+        infoDiv.innerHTML = `
+            <h4>Informações sobre Compressão</h4>
+            <p><strong>Baixa Compressão:</strong> Reduz o tamanho em 10-30% mantendo alta qualidade</p>
+            <p><strong>Compressão Média:</strong> Reduz o tamanho em 30-60% com qualidade balanceada</p>
+            <p><strong>Alta Compressão:</strong> Reduz o tamanho em 50-80% com qualidade reduzida</p>
+        `;
+        
+        const formatWrapper = document.querySelector('.format-select-wrapper');
+        formatWrapper.appendChild(infoDiv);
+    }
+
+    function removeCompressionInfo() {
+        const existingInfo = document.getElementById('compression-info');
+        if (existingInfo) {
+            existingInfo.remove();
         }
     }
 
@@ -247,7 +330,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Feedback visual
         convertButton.disabled = true;
-        convertButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Convertendo...';
+        const isCompression = categoryConversions[currentCategory]?.isCompression;
+        const buttonText = isCompression ? 'Comprimindo...' : 'Convertendo...';
+        convertButton.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> ${buttonText}`;
 
         try {
             // Criar FormData para enviar múltiplos arquivos
@@ -276,7 +361,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (result.success && result.sessionId) {
                 // Redirecionar para página de downloads
-                window.location.href = `/views/downloads.html?session=${result.sessionId}`;
+                window.location.href = `/downloads?session=${result.sessionId}`;
             } else {
                 throw new Error(result.error || 'Erro na conversão');
             }
@@ -287,7 +372,9 @@ document.addEventListener('DOMContentLoaded', () => {
         } finally {
             // Reabilitar o botão
             convertButton.disabled = false;
-            convertButton.innerHTML = "Converter";
+            const isCompression = categoryConversions[currentCategory]?.isCompression;
+            const buttonText = isCompression ? 'Comprimir' : 'Converter';
+            convertButton.innerHTML = buttonText;
         }
     });
 });

@@ -502,3 +502,111 @@ footer {
         transform: rotate(90deg) translateX(4px);
     }
 }
+
+
+/* Compression Category Styles */
+.category-icon.compression {
+    background: linear-gradient(135deg, #6f42c1, #e83e8c);
+}
+
+.compression-card {
+    grid-column: 1 / -1; /* Ocupa toda a largura do grid */
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+/* Update grid to accommodate 5 categories */
+.categories-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 1.5rem;
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+/* Responsive adjustments for compression category */
+@media (max-width: 768px) {
+    .compression-card {
+        grid-column: 1;
+        max-width: none;
+    }
+}
+
+/* Quality selection styles for compression */
+.quality-select-wrapper {
+    margin-bottom: 1rem;
+}
+
+.quality-select-wrapper label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: #333;
+}
+
+.quality-select-wrapper select {
+    width: 100%;
+    padding: 0.75rem;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    font-size: 1rem;
+    background: white;
+    cursor: pointer;
+    transition: border-color 0.3s ease;
+}
+
+.quality-select-wrapper select:focus {
+    outline: none;
+    border-color: #6f42c1;
+    box-shadow: 0 0 0 3px rgba(111, 66, 193, 0.1);
+}
+
+/* Compression info display */
+.compression-info {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.compression-info h4 {
+    margin: 0 0 0.5rem 0;
+    color: #6f42c1;
+    font-size: 1rem;
+}
+
+.compression-info p {
+    margin: 0;
+    font-size: 0.9rem;
+    color: #666;
+}
+
+/* Compression level indicators */
+.compression-level {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.compression-level .level-indicator {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #e9ecef;
+}
+
+.compression-level.low .level-indicator:nth-child(1) {
+    background: #28a745;
+}
+
+.compression-level.medium .level-indicator:nth-child(1),
+.compression-level.medium .level-indicator:nth-child(2) {
+    background: #ffc107;
+}
+
+.compression-level.high .level-indicator {
+    background: #dc3545;
+}
+

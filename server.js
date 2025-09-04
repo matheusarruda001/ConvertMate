@@ -22,8 +22,13 @@ app.use(express.static(path.join(__dirname)));
 app.use('/api', conversionRoutes); // Usa o prefixo /api para as rotas de conversão
 
 // Rota principal para servir o index.html
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'views', 'index.html'));
+app.get("/", (req, res) => {
+    res.sendFile(path.join(__dirname, "views", "index.html"));
+});
+
+// Rota para servir a página de downloads
+app.get("/downloads", (req, res) => {
+    res.sendFile(path.join(__dirname, "views", "downloads.html"));
 });
 
 // 5. Iniciar o Servidor
