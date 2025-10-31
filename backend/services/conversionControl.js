@@ -4,8 +4,8 @@ const express = require('express');
 const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
-const { convertImage, convertDocument, convertVideo, convertAudio } = require('../services/conversionService');
-const { compressPDF, compressVideo, compressImage } = require('../services/compressionService');
+const { convertImage, convertDocument, convertVideo, convertAudio } = require('./conversionService');
+const { compressPDF, compressVideo, compressImage } = require('./compressionService');
 
 const router = express.Router();
 const upload = multer({ dest: 'uploads/' });

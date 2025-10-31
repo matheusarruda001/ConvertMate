@@ -1,0 +1,11 @@
+# backend/wrangler.toml
+name = "convertmate-backend"
+main = "index.js"
+compatibility_date = "2025-10-30"
+
+[dev]
+port = 8787
+
+[[r2_buckets]]
+binding = "CONVERT_BUCKET"
+bucket_name = "convertmate-files"
