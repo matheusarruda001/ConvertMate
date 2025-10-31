@@ -1,5 +1,18 @@
 // Downloads Page JavaScript
 
+const DEFAULT_API_BASE_URL = (() => {
+    const origin = window.location.origin;
+    if (
+        origin.startsWith('http://127.0.0.1') ||
+        origin.startsWith('http://localhost:8787')
+    ) {
+        return origin;
+    }
+    return 'https://convertmate-backend.matheus-arruda-ribeiro.workers.dev';
+})();
+
+const API_BASE_URL = window.CONVERTMATE_API_BASE_URL || DEFAULT_API_BASE_URL;
+
 document.addEventListener('DOMContentLoaded', () => {
     // Elementos do DOM
     const loadingState = document.getElementById('loading-state');
@@ -15,6 +28,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // Obter o nome do arquivo (filename) da URL
     const urlParams = new URLSearchParams(window.location.search);
     const filename = urlParams.get('file');
+    const displayNameParam = urlParams.get('name');
+    const sizeParam = urlParams.get('size');
+    const originalNameParam = urlParams.get('original');
+    const contentTypeParam = urlParams.get('type');
 
     // O botão de download de todos não é mais necessário
     if (downloadAllBtn) {
@@ -29,11 +46,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // Como é um arquivo único, simulamos os dados de uma sessão
     const fileData = {
         filename: filename,
-        originalName: filename, // O nome original será obtido pelo Worker
+        originalName: displayNameParam || filename,
+        downloadName: displayNameParam || filename,
+        displayName: displayNameParam || filename,
         status: 'success',
-        size: 0, // O tamanho será obtido pelo Worker
-        originalFormat: '...',
-        targetFormat: '...'
+        size: sizeParam ? Number(sizeParam) : 0,
+        originalNameRaw: originalNameParam || '',
+        contentType: contentTypeParam || ''
     };
 
     // Exibir o arquivo
@@ -57,22 +76,31 @@ document.addEventListener('DOMContentLoaded', () => {
         item.className = `download-item ${file.status}`;
 
         const isSuccess = file.status === 'success';
-        const iconClass = isSuccess ? 'fa-file-check' : 'fa-file-exclamation';
         const statusText = isSuccess ? 'Convertido' : 'Erro';
         const statusClass = isSuccess ? 'success' : 'error';
+        const displayName = file.displayName || file.downloadName || file.originalName || file.filename;
+        const iconClasses = isSuccess ? 'fa-regular fa-file-image' : 'fa-solid fa-triangle-exclamation';
+        const sizeText = file.size && !Number.isNaN(file.size) && file.size > 0
+            ? formatFileSize(file.size)
+            : '—';
+        const metaParts = [];
+        metaParts.push(`Tamanho: ${sizeText}`);
+        if (file.contentType) {
+            metaParts.push(file.contentType);
+        }
 
         // O Worker (handleDownload) lidará com o Content-Disposition para fornecer o nome original e o Content-Length para o tamanho.
         // O frontend simplesmente aponta para a rota de download.
         item.innerHTML = `
             <div class="file-info">
-                <div class="file-icon ${statusClass}">
-                    <i class="fa-solid ${iconClass}"></i>
+                <div class="file-icon">
+                    <i class="${iconClasses}"></i>
                 </div>
                 <div class="file-details">
-                    <h4>${file.originalName}</h4>
+                    <h4>${displayName}</h4>
                     <div class="file-meta">
-                        <span>Tamanho: ${file.size === 0 ? 'Calculando...' : formatFileSize(file.size)}</span>
-                        <span class="conversion-info">Pronto para Download</span>
+                        <span>${metaParts.join(' • ')}</span>
+                        <span class="conversion-info">Pronto para download</span>
                     </div>
                 </div>
             </div>
@@ -80,13 +108,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 <span class="status-badge ${statusClass}">${statusText}</span>
             </div>
             <div class="file-actions">
-                ${isSuccess ? 
-                    `<a href="/api/download/${file.filename}" class="download-btn" download>
-                        <i class="fa-solid fa-download"></i> Baixar
-                    </a>` : 
-                    `<button class="download-btn" disabled>
-                        <i class="fa-solid fa-times"></i> Indisponível
-                    </button>`
+                ${
+                    isSuccess
+                        ? `<a href="${API_BASE_URL}/api/download/${file.filename}" class="download-btn" download="${file.downloadName || ''}">
+                            <i class="fa-solid fa-download"></i> Baixar
+                        </a>`
+                        : `<button class="download-btn" disabled>
+                            <i class="fa-solid fa-times"></i> Indisponível
+                          </button>`
                 }
             </div>
         `;

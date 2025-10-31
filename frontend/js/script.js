@@ -1,5 +1,18 @@
 // --- frontend/js/script.js ---
 
+const DEFAULT_API_BASE_URL = (() => {
+    const origin = window.location.origin;
+    if (
+        origin.startsWith('http://127.0.0.1') ||
+        origin.startsWith('http://localhost:8787')
+    ) {
+        return origin;
+    }
+    return 'https://convertmate-backend.matheus-arruda-ribeiro.workers.dev';
+})();
+
+const API_BASE_URL = window.CONVERTMATE_API_BASE_URL || DEFAULT_API_BASE_URL;
+
 document.addEventListener('DOMContentLoaded', () => {
     // Selecionando os elementos do DOM
     const categoriesSection = document.getElementById('categories-section');
@@ -27,9 +40,9 @@ document.addEventListener('DOMContentLoaded', () => {
             title: 'Conversor de Imagens',
             description: 'Transforme suas imagens mantendo a qualidade.',
             formats: {
-                'jpeg': ['png', 'jpg', 'webp'],
-                'jpg': ['png', 'jpeg', 'webp'],
-                'png': ['jpeg', 'jpg', 'webp'],
+                'jpeg': ['png', 'jpg'],
+                'jpg': ['png', 'jpeg'],
+                'png': ['jpeg', 'jpg'],
                 'webp': ['png', 'jpg', 'jpeg']
             },
             acceptedTypes: '.jpeg,.jpg,.png,.webp'
@@ -40,8 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
             formats: {
                 'jpeg': ['low', 'medium', 'high'],
                 'jpg': ['low', 'medium', 'high'],
-                'png': ['low', 'medium', 'high'],
-                'webp': ['low', 'medium', 'high']
+                'png': ['low', 'medium', 'high']
             },
             acceptedTypes: '.jpeg,.jpg,.png,.webp',
             isCompression: true
@@ -298,7 +310,7 @@ document.addEventListener('DOMContentLoaded', () => {
             formData.append('category', currentCategory);
 
             // Enviar para o servidor (nova rota /api/convert)
-            const response = await fetch('/api/convert', {
+            const response = await fetch(`${API_BASE_URL}/api/convert`, {
                 method: 'POST',
                 body: formData,
             });
@@ -317,8 +329,21 @@ document.addEventListener('DOMContentLoaded', () => {
             const result = await response.json();
             
             if (result.success && result.downloadFilename) {
-                // Redirecionar para a página de downloads com o nome do arquivo no R2
-                window.location.href = `/downloads.html?file=${encodeURIComponent(result.downloadFilename)}`;
+                const downloadNameParam = result.downloadName || result.originalName || result.downloadFilename;
+                const query = new URLSearchParams({
+                    file: result.downloadFilename,
+                    name: downloadNameParam,
+                });
+                if (result.size) {
+                    query.set('size', String(result.size));
+                }
+                if (result.originalName) {
+                    query.set('original', result.originalName);
+                }
+                if (result.contentType) {
+                    query.set('type', result.contentType);
+                }
+                window.location.href = `/downloads.html?${query.toString()}`;
             } else {
                 throw new Error(result.error || 'Erro na conversão');
             }
@@ -356,3 +381,4 @@ document.addEventListener('DOMContentLoaded', () => {
         lastScrollTop = scrollTop <= 0 ? 0 : scrollTop; // Para evitar números negativos
     });
 });
+

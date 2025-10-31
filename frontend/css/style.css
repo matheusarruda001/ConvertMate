@@ -41,15 +41,18 @@ header .container {
 }
 
 .logo {
+    display: inline-flex;
+    align-items: center;
     font-weight: 700;
     font-size: 1.8rem;
     color: var(--primary-color);
+    text-decoration: none;
+    gap: 1.5rem;
 }
 
 .logo-img {
   height: 50px;
   width: auto;
-  margin-right: 15px;
   vertical-align: middle;
 }
 

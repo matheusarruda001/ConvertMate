@@ -69,14 +69,23 @@
     display: block;
     font-size: 1.5rem;
     font-weight: 600;
+    color: #343a40;
 }
 
 .summary-value.success {
-    color: #28a745;
+    color: #155724;
+    background: #e9f7ef;
+    padding: 0.15rem 0.75rem;
+    border-radius: 20px;
+    display: inline-block;
 }
 
 .summary-value.error {
-    color: #dc3545;
+    color: #721c24;
+    background: #f8d7da;
+    padding: 0.15rem 0.75rem;
+    border-radius: 20px;
+    display: inline-block;
 }
 
 /* Downloads List */
@@ -117,14 +126,23 @@
 }
 
 .file-icon {
-    font-size: 2rem;
     margin-right: 1rem;
-    width: 50px;
-    text-align: center;
+    width: 48px;
+    height: 48px;
+    /* text-align: center; */
+    border-radius: 12px;
+    background: #f1f3f5;
+    border: 1px solid #e2e6ea;
+    display: flex;
+    align-items: center;
+    justify-content: end;
+    color: #6c757d;
+    font-size: 1.6rem;
 }
 
-.file-icon.success {
-    color: #28a745;
+.file-icon i {
+    line-height: 1;
+    display: block;
 }
 
 .file-icon.error {
