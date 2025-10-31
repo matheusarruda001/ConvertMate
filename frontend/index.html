@@ -34,14 +34,34 @@
     <main>
         <section id="hero-section" class="container">
             <h2>Conversor de Arquivos Rápido e Simples</h2>
-            <p class="subtitle">Converta seus documentos, imagens, vídeos e áudios sem complicação.</p>
+            <p class="subtitle">Estamos começando pelas conversões de imagens. Suporte para documentos, áudio, vídeo e compressão chegam em breve.</p>
         </section>
 
         <!-- Categories Section -->
         <section id="categories-section" class="container">
             <div class="categories-grid">
+                <!-- Images Category -->
+                <div class="category-card active" data-category="images">
+                    <div class="category-icon images">
+                        <i class="fa-solid fa-image"></i>
+                    </div>
+                    <div class="category-content">
+                        <h3>Conversor de imagens</h3>
+                        <p>Transforme suas imagens entre PNG, JPG, JPEG e WEBP mantendo a qualidade.</p>
+                        <div class="category-formats">
+                            <span class="format-tag">PNG</span>
+                            <span class="format-tag">JPG</span>
+                            <span class="format-tag">JPEG</span>
+                            <span class="format-tag disabled" >WEBP</span>
+                        </div>
+                    </div>
+                    <div class="category-arrow">
+                        <i class="fa-solid fa-chevron-right"></i>
+                    </div>
+                </div>
+
                 <!-- Documents Category -->
-                <div class="category-card" data-category="documents">
+                <div class="category-card disabled" data-category="documents">
                     <div class="category-icon documents">
                         <i class="fa-solid fa-file-text"></i>
                     </div>
@@ -54,34 +74,15 @@
                             <span class="format-tag">DOC</span>
                             <span class="format-tag">XLSX</span>
                         </div>
+                        <span class="coming-soon-tag">Em breve</span>
                     </div>
                     <div class="category-arrow">
                         <i class="fa-solid fa-chevron-right"></i>
                     </div>
                 </div>
 
-                <!-- Images Category -->
-                <div class="category-card" data-category="images">
-                    <div class="category-icon images">
-                        <i class="fa-solid fa-image"></i>
-                    </div>
-                    <div class="category-content">
-                        <h3>Conversor de imagens</h3>
-                        <p>Transforme suas imagens entre PNG, JPG, JPEG e WEBP mantendo a qualidade.</p>
-                        <div class="category-formats">
-                            <span class="format-tag">PNG</span>
-                            <span class="format-tag">JPG</span>
-                            <span class="format-tag">JPEG</span>
-                            <span class="format-tag">WEBP</span>
-                        </div>
-                    </div>
-                    <div class="category-arrow">
-                        <i class="fa-solid fa-chevron-right"></i>
-                    </div>
-                </div>
-
-                <!-- Videos Category -->
-                <div class="category-card" data-category="videos">
+                <!-- Vídeos Category -->
+                <div class="category-card disabled" data-category="videos">
                     <div class="category-icon videos">
                         <i class="fa-solid fa-video"></i>
                     </div>
@@ -93,35 +94,38 @@
                             <span class="format-tag">AVI</span>
                             <span class="format-tag">MOV</span>
                             <span class="format-tag">MKV</span>
-                            <span class="format-tag">WEBM</span>
+                            <span class="format-tag disabled">WEBM</span>
+                            
                         </div>
+                        <span class="coming-soon-tag">Em breve</span>
                     </div>
                     <div class="category-arrow">
                         <i class="fa-solid fa-chevron-right"></i>
                     </div>
                 </div>
 
-                <!-- Audio Category -->
-                <div class="category-card" data-category="audio">
+                <!-- Áudio Category -->
+                <div class="category-card disabled" data-category="audio">
                     <div class="category-icon audio">
                         <i class="fa-solid fa-music"></i>
                     </div>
                     <div class="category-content">
                         <h3>Conversor de áudio</h3>
-                        <p>Transforme seus arquivos de áudio entre MP3, WAV e AAC preservando a qualidade.</p>
+                        <p>Transforme seus arquivos de Áudio entre MP3, WAV e AAC preservando a qualidade.</p>
                         <div class="category-formats">
                             <span class="format-tag">MP3</span>
                             <span class="format-tag">WAV</span>
                             <span class="format-tag">AAC</span>
                         </div>
+                        <span class="coming-soon-tag">Em breve</span>
                     </div>
                     <div class="category-arrow">
                         <i class="fa-solid fa-chevron-right"></i>
                     </div>
                 </div>
 
-                <!-- Compression Category -->
-                <div class="category-card compression-card" data-category="compression">
+                <!-- Compressão Category -->
+                <div class="category-card compression-card disabled" data-category="compression">
                     <div class="category-icon compression">
                         <i class="fa-solid fa-compress-arrows-alt"></i>
                     </div>
@@ -133,19 +137,19 @@
                             <span class="format-tag">Vídeos</span>
                             <span class="format-tag">Imagens</span>
                         </div>
+                        <span class="coming-soon-tag">Em breve</span>
                     </div>
                     <div class="category-arrow">
                         <i class="fa-solid fa-chevron-right"></i>
                     </div>
                 </div>
             </div>
-        </section>
-
-        <!-- Converter Section (Hidden initially) -->
+        </section><!-- Converter Section (Hidden initially) -->
         <section id="converter-section" class="container hidden">
             <div class="converter-header">
                 <button id="back-to-categories" class="back-button">
-                    <i class="fa-solid fa-arrow-left"></i> Voltar às categorias
+                    <i class="fa-solid fa-arrow-left" style="text-decoration: none;"></i>
+                    V͟͟o͟͟l͟͟t͟͟a͟͟r͟͟ à͟͟s͟͟ c͟͟a͟͟t͟͟e͟͟g͟͟o͟͟r͟͟i͟͟a͟͟s͟͟
                 </button>
                 <h3 id="converter-title">Conversor de Arquivos</h3>
                 <p id="converter-description" class="subtitle">Selecione seus arquivos para conversão.</p>
@@ -217,3 +221,10 @@
     <script src="js/script.js"></script>
 </body>
 </html>
+
+
+
+
+
+
+

@@ -35,6 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let selectedFiles = []; // Usaremos apenas o primeiro arquivo
 
     // Mapeamento de conversões por categoria (simplificado para Imagens/Compressão)
+    // Apenas conversões de imagem estão ativas nesta versão
     const categoryConversions = {
         images: {
             title: 'Conversor de Imagens',
@@ -43,7 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 'jpeg': ['png', 'jpg'],
                 'jpg': ['png', 'jpeg'],
                 'png': ['jpeg', 'jpg'],
-                'webp': ['png', 'jpg', 'jpeg']
+                // 'webp': ['png', 'jpg', 'jpeg'] - Nao suportado pelo workers da cloudflare
             },
             acceptedTypes: '.jpeg,.jpg,.png,.webp'
         },
@@ -55,7 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 'jpg': ['low', 'medium', 'high'],
                 'png': ['low', 'medium', 'high']
             },
-            acceptedTypes: '.jpeg,.jpg,.png,.webp',
+            acceptedTypes: '.jpeg,.jpg,.png',
             isCompression: true
         }
     };

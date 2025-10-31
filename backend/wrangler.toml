@@ -14,3 +14,18 @@ bucket_name = "convertmate-files" # Mantendo o nome do bucket original
 [assets]
 directory = "../frontend" # Diretório que contém os arquivos HTML/CSS/JS
 # binding = "ASSETS" # Binding implícito; definido apenas para clareza se necessário
+
+[observability]
+enabled = false
+head_sampling_rate = 1
+
+[observability.logs]
+enabled = true
+head_sampling_rate = 1
+persist = true
+invocation_logs = true
+
+[observability.traces]
+enabled = false
+persist = true
+head_sampling_rate = 1
