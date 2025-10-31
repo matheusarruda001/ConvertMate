@@ -1,5 +1,7 @@
 // --- backend/services/compressionService.js ---
 
+import { Jimp } from 'jimp';
+import { Buffer } from 'node:buffer';
 
 /**
  * Comprime um buffer de imagem ajustando a qualidade.
@@ -12,49 +14,59 @@ export async function compressImage(fileUint8Array, originalFormat, targetFormat
     try {
         const image = await Jimp.read(Buffer.from(fileUint8Array));
 
-        let mime;
-        let finalExtension = targetFormat.toLowerCase();
-        let quality = 80; // Qualidade de compressão padrão
+        let quality = 80; // Qualidade padrão
+        let requested = (targetFormat || originalFormat).toLowerCase();
+        let preset = null;
 
-        switch (finalExtension) {
-            case 'jpg':
-            case 'jpeg':
-                mime = Jimp.MIME_JPEG;
-                quality = 70; // Um pouco mais de compressão para JPEG
-                break;
-            case 'png':
-                mime = Jimp.MIME_PNG;
-                // PNG é lossless, mas Jimp pode otimizar paletas/chunks
-                break;
-            case 'webp':
-                mime = 'image/webp';
-                quality = 70;
-                break;
-            default:
-                // Se o formato de destino não for um dos formatos de compressão, usamos o original
-                finalExtension = originalFormat.toLowerCase();
-                switch (finalExtension) {
-                    case 'jpg':
-                    case 'jpeg':
-                        mime = Jimp.MIME_JPEG;
-                        quality = 70;
-                        break;
-                    case 'png':
-                        mime = Jimp.MIME_PNG;
-                        break;
-                    default:
-                        throw new Error(`Formato de compressão \"${originalFormat}\" não suportado.`);
-                }
+        if (['low', 'medium', 'high'].includes(requested)) {
+            preset = requested;
+            requested = originalFormat.toLowerCase();
         }
 
-        // Aplica a qualidade (só tem efeito em formatos com perdas como JPEG/WebP)
-        image.quality(quality);
+        let finalExtension = requested;
+        let mime;
 
-        // getBufferAsync retorna um Buffer
-        const buffer = await image.getBufferAsync(mime);
+        switch (requested) {
+            case 'jpg':
+            case 'jpeg':
+                mime = 'image/jpeg';
+                break;
+            case 'png':
+                mime = 'image/png';
+                break;
+            default:
+                throw new Error(`Formato de compressão "${originalFormat}" não suportado.`);
+        }
+
+        if (mime === 'image/webp') {
+            throw new Error('Compressão de arquivos WEBP não é suportada neste ambiente.');
+        }
+
+        if (preset) {
+            switch (preset) {
+                case 'low':
+                    quality = 85;
+                    break;
+                case 'medium':
+                    quality = 70;
+                    break;
+                case 'high':
+                    quality = 55;
+                    break;
+            }
+        } else if (mime === 'image/jpeg') {
+            quality = 70;
+        }
+
+        const options = {};
+        if (mime === 'image/jpeg') {
+            options.quality = quality;
+        }
+
+        const buffer = await image.getBuffer(mime, options);
 
         return {
-            buffer: buffer.buffer, // ArrayBuffer para o R2
+            buffer: buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength),
             extension: finalExtension
         };
 

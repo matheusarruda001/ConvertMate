@@ -7,25 +7,31 @@ import conversionRouter from './routes/conversionRoutes';
 const router = Router();
 
 // Adiciona as rotas de conversão ao nosso roteador principal
-// O itty-router permite que um router seja usado como middleware/sub-router
 router.all('/api/*', conversionRouter.handle);
-
-// Rota padrão para a raiz (pode ser útil para health check)
-router.get('/', () => new Response('ConvertMate Worker is running!'));
-
-// Rota de fallback para 404
-router.all('*', () => new Response('Not Found.', { status: 404 }));
 
 // Função principal do Cloudflare Worker
 export default {
   async fetch(request, env, ctx) {
-    // Lida com requisições "preflight" de CORS. Essencial para a comunicação entre domínios.
-    if (request.method === 'OPTIONS') {
-      return handleOptions(request);
+    const url = new URL(request.url);
+
+    // OPTIONS só precisa ser tratado para as rotas de API
+    if (url.pathname.startsWith('/api/')) {
+      if (request.method === 'OPTIONS') {
+        return handleOptions(request);
+      }
+      return router.handle(request, env, ctx);
     }
 
-    // Passa a requisição para o roteador e retorna a resposta
-    return router.handle(request, env, ctx);
+    // Para demais rotas, tenta servir os assets estáticos configurados no wrangler.toml
+    if (env.ASSETS) {
+      const assetResponse = await env.ASSETS.fetch(request);
+      if (assetResponse.status !== 404) {
+        return assetResponse;
+      }
+    }
+
+    // Caso nenhuma rota/asset seja encontrada, retorna 404
+    return new Response('Not Found.', { status: 404 });
   },
 };
 

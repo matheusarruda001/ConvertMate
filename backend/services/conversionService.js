@@ -1,5 +1,15 @@
 // --- backend/services/conversionService.js ---
 
+import { Jimp } from 'jimp';
+import { Buffer } from 'node:buffer';
+
+const MIME_TYPES = {
+    png: 'image/png',
+    jpg: 'image/jpeg',
+    jpeg: 'image/jpeg',
+    webp: 'image/webp',
+};
+
 // Usaremos a biblioteca Jimp, pois é uma das poucas que funciona bem em Workers (com algumas ressalvas).
 // Nota: Em um ambiente de produção, para a melhor performance e menor uso de memória,
 // a abordagem ideal seria usar o Cloudflare Images Transform.
@@ -25,39 +35,25 @@ export async function convertImage(fileUint8Array, targetFormat) {
         // Jimp.read aceita um Buffer, então criamos um Buffer a partir do Uint8Array
         const image = await Jimp.read(Buffer.from(fileUint8Array));
 
-        let mime;
-        switch (targetFormat.toLowerCase()) {
-            case 'png':
-                mime = Jimp.MIME_PNG;
-                break;
-            case 'jpg':
-            case 'jpeg':
-                mime = Jimp.MIME_JPEG;
-                break;
-            case 'webp':
-                // O Jimp pode precisar de um plugin (como jimp-compact-webp) para WebP,
-                // mas vamos assumir que a versão padrão é suficiente para formatos comuns.
-                // Se falhar, o usuário precisará instalar o plugin.
-                mime = 'image/webp';
-                break;
-            case 'gif':
-                mime = Jimp.MIME_GIF;
-                break;
-            case 'bmp':
-                mime = Jimp.MIME_BMP;
-                break;
-            default:
-                throw new Error(`Formato de destino "${targetFormat}" não suportado.`);
+        const format = targetFormat.toLowerCase();
+        const mime = MIME_TYPES[format];
+
+        if (!mime) {
+            throw new Error(`Formato de destino "${targetFormat}" nao suportado.`);
         }
 
-        // Se for JPEG, podemos aplicar uma qualidade padrão de 80
-        if (mime === Jimp.MIME_JPEG) {
-            image.quality(80);
+        if (mime === 'image/webp') {
+            throw new Error('Conversao para WEBP nao suportada neste ambiente.');
+        }
+        // Define opções específicas por formato (qualidade para formatos com perdas)
+        const options = {};
+        if (mime === 'image/jpeg') {
+            options.quality = 80;
         }
 
         // getBufferAsync retorna um Buffer, que tem uma propriedade .buffer que é um ArrayBuffer
-        const buffer = await image.getBufferAsync(mime);
-        return buffer.buffer;
+        const buffer = await image.getBuffer(mime, options);
+        return buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
 
     } catch (error) {
         console.error('Erro na conversão de imagem com Jimp:', error);
@@ -77,3 +73,4 @@ export async function convertVideo() {
 export async function convertAudio() {
     throw new Error('Conversão de Áudio não suportada no Cloudflare Worker nesta versão.');
 }
+

@@ -1,6 +1,7 @@
 name = "convertmate-backend"
 main = "index.js"
-compatibility_date = "2024-10-31" # Atualizado para a data de hoje para garantir compatibilidade com recursos mais recentes
+compatibility_date = "2025-10-31" # Atualizado para a data de hoje para garantir compatibilidade com recursos mais recentes
+compatibility_flags = ["nodejs_compat"]
 
 [dev]
 port = 8787
@@ -9,6 +10,7 @@ port = 8787
 binding = "R2_BUCKET" # Variável de ambiente para acesso ao R2
 bucket_name = "convertmate-files" # Mantendo o nome do bucket original
 
-# Adicionando a configuração para Pages Functions (se o worker for usado em Pages)
-[site]
-bucket = "./frontend" # Assumindo que o frontend será servido via Pages
+# Configuração dos assets estáticos do frontend
+[assets]
+directory = "../frontend" # Diretório que contém os arquivos HTML/CSS/JS
+# binding = "ASSETS" # Binding implícito; definido apenas para clareza se necessário

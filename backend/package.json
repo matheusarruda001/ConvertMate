@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "itty-router": "^4.0.27",
+    "jimp": "^1.6.0",
     "jpeg-js": "^0.4.4"
   },
   "devDependencies": {
