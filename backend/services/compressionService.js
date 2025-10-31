@@ -1,168 +1,74 @@
-// --- services/compressionService.js ---
+// --- backend/services/compressionService.js ---
 
-const sharp = require('sharp');
-const path = require('path');
-const fs = require('fs');
-const { exec } = require('child_process');
-const util = require('util');
 
-const execPromise = util.promisify(exec);
-
-async function compressPDF(inputFile, quality) {
+/**
+ * Comprime um buffer de imagem ajustando a qualidade.
+ * @param {Uint8Array} fileUint8Array - O buffer da imagem original.
+ * @param {string} originalFormat - O formato original (ex: 'png', 'jpeg').
+ * @param {string} targetFormat - O formato de destino (ex: 'jpg', 'webp' ou 'png' para compressão sem mudança de formato).
+ * @returns {Promise<{buffer: ArrayBuffer, extension: string}>} - O buffer da imagem comprimida e a extensão final.
+ */
+export async function compressImage(fileUint8Array, originalFormat, targetFormat = originalFormat) {
     try {
-        const outputFileName = `${path.parse(inputFile.originalname).name}_compressed.pdf`;
-        const outputPath = path.join('uploads', outputFileName);
-        const inputPath = path.resolve(inputFile.path);
-        const fullOutputPath = path.resolve(outputPath);
+        const image = await Jimp.read(Buffer.from(fileUint8Array));
 
-        // Configurações de qualidade para Ghostscript
-        let pdfSettings = '';
-        switch (quality) {
-            case 'low':
-                pdfSettings = '/printer'; // Melhor qualidade, menor compressão
+        let mime;
+        let finalExtension = targetFormat.toLowerCase();
+        let quality = 80; // Qualidade de compressão padrão
+
+        switch (finalExtension) {
+            case 'jpg':
+            case 'jpeg':
+                mime = Jimp.MIME_JPEG;
+                quality = 70; // Um pouco mais de compressão para JPEG
                 break;
-            case 'medium':
-                pdfSettings = '/ebook'; // Qualidade média
+            case 'png':
+                mime = Jimp.MIME_PNG;
+                // PNG é lossless, mas Jimp pode otimizar paletas/chunks
                 break;
-            case 'high':
-                pdfSettings = '/screen'; // Menor qualidade, maior compressão
+            case 'webp':
+                mime = 'image/webp';
+                quality = 70;
                 break;
             default:
-                pdfSettings = '/ebook';
+                // Se o formato de destino não for um dos formatos de compressão, usamos o original
+                finalExtension = originalFormat.toLowerCase();
+                switch (finalExtension) {
+                    case 'jpg':
+                    case 'jpeg':
+                        mime = Jimp.MIME_JPEG;
+                        quality = 70;
+                        break;
+                    case 'png':
+                        mime = Jimp.MIME_PNG;
+                        break;
+                    default:
+                        throw new Error(`Formato de compressão \"${originalFormat}\" não suportado.`);
+                }
         }
 
-        const command = `gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=${pdfSettings} -dNOPAUSE -dQUIET -dBATCH -sOutputFile="${fullOutputPath}" "${inputPath}"`;
-        
-        console.log(`Executando comando de compressão PDF: ${command}`);
-        
-        const { stdout, stderr } = await execPromise(command, { timeout: 60000 }); // 1 minuto
-        
-        if (fs.existsSync(fullOutputPath)) {
-            console.log('Compressão de PDF concluída com sucesso.');
-            return outputPath;
-        } else {
-            throw new Error('Arquivo PDF comprimido não foi gerado.');
-        }
+        // Aplica a qualidade (só tem efeito em formatos com perdas como JPEG/WebP)
+        image.quality(quality);
+
+        // getBufferAsync retorna um Buffer
+        const buffer = await image.getBufferAsync(mime);
+
+        return {
+            buffer: buffer.buffer, // ArrayBuffer para o R2
+            extension: finalExtension
+        };
 
     } catch (error) {
-        console.error('Erro durante a compressão do PDF:', error);
-        throw new Error(`Falha ao comprimir o PDF: ${error.message}`);
+        console.error('Erro na compressão de imagem com Jimp:', error);
+        throw new Error(`Falha na compressão de imagem: ${error.message}.`);
     }
 }
 
-async function compressVideo(inputFile, quality) {
-    try {
-        const outputFileName = `${path.parse(inputFile.originalname).name}_compressed.mp4`;
-        const outputPath = path.join('uploads', outputFileName);
-        const inputPath = path.resolve(inputFile.path);
-        const fullOutputPath = path.resolve(outputPath);
-
-        // Configurações de CRF baseadas na qualidade
-        let crf = '';
-        let preset = '';
-        
-        switch (quality) {
-            case 'low':
-                crf = '20'; // Melhor qualidade, menor compressão
-                preset = 'slow';
-                break;
-            case 'medium':
-                crf = '26'; // Qualidade média
-                preset = 'medium';
-                break;
-            case 'high':
-                crf = '32'; // Menor qualidade, maior compressão
-                preset = 'fast';
-                break;
-            default:
-                crf = '26';
-                preset = 'medium';
-        }
-
-        const command = `ffmpeg -i "${inputPath}" -c:v libx264 -crf ${crf} -preset ${preset} -c:a aac -b:a 128k "${fullOutputPath}" -y`;
-        
-        console.log(`Executando comando de compressão de vídeo: ${command}`);
-        
-        // Vídeos podem demorar mais, então aumentamos o timeout
-        const { stdout, stderr } = await execPromise(command, { timeout: 600000 }); // 10 minutos
-        
-        if (fs.existsSync(fullOutputPath)) {
-            console.log('Compressão de vídeo concluída com sucesso.');
-            return outputPath;
-        } else {
-            throw new Error('Arquivo de vídeo comprimido não foi gerado.');
-        }
-
-    } catch (error) {
-        console.error('Erro durante a compressão do vídeo:', error);
-        throw new Error(`Falha ao comprimir o vídeo: ${error.message}`);
-    }
+// Exportações vazias para manter a interface de serviço, mas removendo as funções não suportadas
+export async function compressPDF() {
+    throw new Error('Compressão de PDF não suportada no Cloudflare Worker nesta versão.');
 }
 
-async function compressImage(inputFile, quality) {
-    try {
-        const fileExtension = path.extname(inputFile.originalname).toLowerCase();
-        const outputFileName = `${path.parse(inputFile.originalname).name}_compressed${fileExtension}`;
-        const outputPath = path.join('uploads', outputFileName);
-        const fullOutputPath = path.resolve(outputPath);
-
-        // Configurações de qualidade
-        let qualityValue = 75;
-        let pngQuality = 80;
-        
-        switch (quality) {
-            case 'low':
-                qualityValue = 90; // Melhor qualidade, menor compressão
-                pngQuality = 95;
-                break;
-            case 'medium':
-                qualityValue = 75; // Qualidade média
-                pngQuality = 80;
-                break;
-            case 'high':
-                qualityValue = 60; // Menor qualidade, maior compressão
-                pngQuality = 65;
-                break;
-            default:
-                qualityValue = 75;
-                pngQuality = 80;
-        }
-
-        let sharpInstance = sharp(inputFile.path);
-
-        // Aplicar compressão baseada no formato
-        if (fileExtension === '.png' || fileExtension === '.webp') {
-            if (fileExtension === '.png') {
-                sharpInstance = sharpInstance.png({ 
-                    quality: pngQuality,
-                    compressionLevel: quality === 'high' ? 9 : quality === 'medium' ? 6 : 3
-                });
-            } else {
-                sharpInstance = sharpInstance.webp({ quality: qualityValue });
-            }
-        } else {
-            // JPEG/JPG
-            sharpInstance = sharpInstance.jpeg({ quality: qualityValue });
-        }
-
-        await sharpInstance.toFile(fullOutputPath);
-        
-        if (fs.existsSync(fullOutputPath)) {
-            console.log('Compressão de imagem concluída com sucesso.');
-            return outputPath;
-        } else {
-            throw new Error('Arquivo de imagem comprimido não foi gerado.');
-        }
-
-    } catch (error) {
-        console.error('Erro durante a compressão da imagem:', error);
-        throw new Error(`Falha ao comprimir a imagem: ${error.message}`);
-    }
+export async function compressVideo() {
+    throw new Error('Compressão de Vídeo não suportada no Cloudflare Worker nesta versão.');
 }
-
-module.exports = {
-    compressPDF,
-    compressVideo,
-    compressImage,
-};
-

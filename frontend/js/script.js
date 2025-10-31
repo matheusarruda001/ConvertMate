@@ -1,3 +1,5 @@
+// --- frontend/js/script.js ---
+
 document.addEventListener('DOMContentLoaded', () => {
     // Selecionando os elementos do DOM
     const categoriesSection = document.getElementById('categories-section');
@@ -17,21 +19,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Variável para armazenar categoria atual e arquivos selecionados
     let currentCategory = null;
-    let selectedFiles = [];
+    let selectedFiles = []; // Usaremos apenas o primeiro arquivo
 
-    // Mapeamento de conversões por categoria
+    // Mapeamento de conversões por categoria (simplificado para Imagens/Compressão)
     const categoryConversions = {
-        documents: {
-            title: 'Conversor de Documentos',
-            description: 'Converta seus documentos entre diferentes formatos.',
-            formats: {
-                'pdf': ['docx', 'doc'],
-                'docx': ['pdf', 'doc'],
-                'doc': ['pdf', 'docx'],
-                'xlsx': ['pdf']
-            },
-            acceptedTypes: '.pdf,.docx,.doc,.xlsx'
-        },
         images: {
             title: 'Conversor de Imagens',
             description: 'Transforme suas imagens mantendo a qualidade.',
@@ -43,44 +34,16 @@ document.addEventListener('DOMContentLoaded', () => {
             },
             acceptedTypes: '.jpeg,.jpg,.png,.webp'
         },
-        videos: {
-            title: 'Conversor de Vídeos',
-            description: 'Converta vídeos entre diferentes formatos.',
-            formats: {
-                'mp4': ['avi', 'mov', 'mkv', 'webm'],
-                'avi': ['mp4', 'mov', 'mkv', 'webm'],
-                'mov': ['mp4', 'avi', 'mkv', 'webm'],
-                'mkv': ['mp4', 'avi', 'mov', 'webm'],
-                'webm': ['mp4', 'avi', 'mov', 'mkv']
-            },
-            acceptedTypes: '.mp4,.avi,.mov,.mkv,.webm'
-        },
-        audio: {
-            title: 'Conversor de Áudio',
-            description: 'Transforme seus arquivos de áudio preservando a qualidade.',
-            formats: {
-                'mp3': ['wav', 'aac'],
-                'wav': ['mp3', 'aac'],
-                'aac': ['mp3', 'wav']
-            },
-            acceptedTypes: '.mp3,.wav,.aac'
-        },
         compression: {
             title: 'Diminuir Tamanho',
-            description: 'Reduza o tamanho de seus arquivos mantendo qualidade aceitável.',
+            description: 'Reduza o tamanho de suas imagens mantendo qualidade aceitável.',
             formats: {
-                'pdf': ['low', 'medium', 'high'],
-                'mp4': ['low', 'medium', 'high'],
-                'avi': ['low', 'medium', 'high'],
-                'mov': ['low', 'medium', 'high'],
-                'mkv': ['low', 'medium', 'high'],
-                'webm': ['low', 'medium', 'high'],
                 'jpeg': ['low', 'medium', 'high'],
                 'jpg': ['low', 'medium', 'high'],
                 'png': ['low', 'medium', 'high'],
                 'webp': ['low', 'medium', 'high']
             },
-            acceptedTypes: '.pdf,.mp4,.avi,.mov,.mkv,.webm,.jpeg,.jpg,.png,.webp',
+            acceptedTypes: '.jpeg,.jpg,.png,.webp',
             isCompression: true
         }
     };
@@ -89,7 +52,12 @@ document.addEventListener('DOMContentLoaded', () => {
     categoryCards.forEach(card => {
         card.addEventListener('click', () => {
             const category = card.dataset.category;
-            selectCategory(category);
+            // Ignorar categorias não implementadas (documentos, áudio, vídeo)
+            if (categoryConversions[category]) {
+                selectCategory(category);
+            } else {
+                alert('Esta categoria será implementada em breve!');
+            }
         });
     });
 
@@ -173,25 +141,21 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        selectedFiles = validFiles;
+        // Simplificação: Apenas o primeiro arquivo é processado
+        selectedFiles = [validFiles[0]];
         fileList.innerHTML = ''; 
         
-        selectedFiles.forEach((file, index) => {
-            displayFile(file, index);
-        });
+        displayFile(selectedFiles[0], 0);
         
         uploadArea.classList.add('hidden');
         conversionArea.classList.remove('hidden');
         
-        // Atualizar opções de conversão baseado no primeiro arquivo
-        if (selectedFiles.length > 0) {
-            const firstFileExtension = selectedFiles[0].name.split('.').pop().toLowerCase();
-            populateConversionOptions(firstFileExtension);
-        }
+        // Atualizar opções de conversão
+        const firstFileExtension = selectedFiles[0].name.split('.').pop().toLowerCase();
+        populateConversionOptions(firstFileExtension);
     }
 
     function displayFile(file, index) {
-        const fileExtension = file.name.split('.').pop().toLowerCase();
         const fileItem = document.createElement('div');
         fileItem.className = 'file-item';
         fileItem.dataset.index = index;
@@ -211,27 +175,13 @@ document.addEventListener('DOMContentLoaded', () => {
         fileList.appendChild(fileItem);
         
         fileItem.querySelector('.remove-file').addEventListener('click', (e) => {
-            const indexToRemove = parseInt(e.target.dataset.index);
-            removeFile(indexToRemove);
+            removeFile(0); // Sempre remove o único arquivo
         });
     }
 
     function removeFile(index) {
-        selectedFiles.splice(index, 1);
-        
-        if (selectedFiles.length === 0) {
-            resetUploadArea();
-        } else {
-            // Re-renderizar lista de arquivos
-            fileList.innerHTML = '';
-            selectedFiles.forEach((file, newIndex) => {
-                displayFile(file, newIndex);
-            });
-            
-            // Atualizar opções de conversão
-            const firstFileExtension = selectedFiles[0].name.split('.').pop().toLowerCase();
-            populateConversionOptions(firstFileExtension);
-        }
+        selectedFiles = [];
+        resetUploadArea();
     }
     
     function populateConversionOptions(extension) {
@@ -309,7 +259,9 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
         
         const formatWrapper = document.querySelector('.format-select-wrapper');
-        formatWrapper.appendChild(infoDiv);
+        if (formatWrapper) {
+            formatWrapper.appendChild(infoDiv);
+        }
     }
 
     function removeCompressionInfo() {
@@ -322,9 +274,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // Lógica de conversão
     convertButton.addEventListener('click', async () => {
         const targetFormat = targetFormatSelect.value;
+        const fileToUpload = selectedFiles[0];
 
-        if (selectedFiles.length === 0 || !targetFormat || !currentCategory) {
-            alert("Por favor, selecione pelo menos um arquivo e um formato de destino.");
+        if (!fileToUpload || !targetFormat || !currentCategory) {
+            alert("Por favor, selecione um arquivo e um formato de destino.");
             return;
         }
 
@@ -335,33 +288,37 @@ document.addEventListener('DOMContentLoaded', () => {
         convertButton.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> ${buttonText}`;
 
         try {
-            // Criar FormData para enviar múltiplos arquivos
+            // Criar FormData para enviar o arquivo
             const formData = new FormData();
+            formData.append('file', fileToUpload); // Apenas um arquivo
             
-            // Adicionar todos os arquivos
-            selectedFiles.forEach((file, index) => {
-                formData.append('files', file);
-            });
-            
+            // Para compressão, o targetFormat é o nível de qualidade (low, medium, high)
+            // Para conversão, é o formato (png, jpg, etc.)
             formData.append('targetFormat', targetFormat);
             formData.append('category', currentCategory);
 
-            // Enviar para o servidor
-            const response = await fetch('/api/convert-multiple', {
+            // Enviar para o servidor (nova rota /api/convert)
+            const response = await fetch('/api/convert', {
                 method: 'POST',
                 body: formData,
             });
 
             if (!response.ok) {
-                const errorData = await response.json();
+                const errorText = await response.text();
+                let errorData;
+                try {
+                    errorData = JSON.parse(errorText);
+                } catch {
+                    throw new Error(`Erro desconhecido: ${errorText}`);
+                }
                 throw new Error(errorData.error || 'Erro no servidor');
             }
 
             const result = await response.json();
             
-            if (result.success && result.sessionId) {
-                // Redirecionar para página de downloads
-                window.location.href = `/downloads?session=${result.sessionId}`;
+            if (result.success && result.downloadFilename) {
+                // Redirecionar para a página de downloads com o nome do arquivo no R2
+                window.location.href = `/downloads.html?file=${encodeURIComponent(result.downloadFilename)}`;
             } else {
                 throw new Error(result.error || 'Erro na conversão');
             }
@@ -385,24 +342,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- NOVA LÓGICA DO HEADER ---
     const header = document.querySelector('header');
-    let lastScrollTop = 0; // Armazena a última posição de rolagem
+    let lastScrollTop = 0;
 
-    window.addEventListener('scroll', function() {
-        // Pega a posição atual da rolagem vertical
+    window.addEventListener('scroll', () => {
         let scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-
         if (scrollTop > lastScrollTop) {
-            // Rolando para BAIXO
-            // Esconde o header movendo-o para cima (fora da tela)
-            // A altura do header é de aproximadamente -100px
-            header.style.top = '-100px'; 
+            // Scroll down
+            header.style.top = '-100px'; // Esconde o header
         } else {
-            // Rolando para CIMA
-            // Mostra o header novamente
-            header.style.top = '0';
+            // Scroll up
+            header.style.top = '0'; // Mostra o header
         }
-
-        // Atualiza a última posição de rolagem
-        lastScrollTop = scrollTop <= 0 ? 0 : scrollTop; 
-    }, false);
+        lastScrollTop = scrollTop <= 0 ? 0 : scrollTop; // Para evitar números negativos
+    });
 });

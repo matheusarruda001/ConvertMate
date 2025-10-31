@@ -1,277 +1,161 @@
-// --- routes/conversionRoutes.js (MODIFICADO PARA MÚLTIPLOS ARQUIVOS E CATEGORIAS) ---
+// --- backend/services/conversionControl.js ---
 
-const express = require('express');
-const multer = require('multer');
-const fs = require('fs');
-const path = require('path');
-const { convertImage, convertDocument, convertVideo, convertAudio } = require('./conversionService');
-const { compressPDF, compressVideo, compressImage } = require('./compressionService');
+import { convertImage } from './conversionService';
+import { compressImage } from './compressionService';
 
-const router = express.Router();
-const upload = multer({ dest: 'uploads/' });
-
-// Definir formatos suportados por categoria
+// Formatos suportados para a primeira versão (apenas imagens)
 const categoryFormats = {
-    documents: {
-        formats: ['pdf', 'docx', 'doc', 'xlsx'],
-        converter: convertDocument
-    },
     images: {
-        formats: ['jpeg', 'jpg', 'png', 'webp'],
+        formats: ['jpeg', 'jpg', 'png', 'webp', 'gif', 'avif', 'tiff'],
         converter: convertImage
-    },
-    videos: {
-        formats: ['mp4', 'avi', 'mov', 'mkv', 'webm'],
-        converter: convertVideo
-    },
-    audio: {
-        formats: ['mp3', 'wav', 'aac'],
-        converter: convertAudio
     },
     compression: {
         formats: {
-            // PDFs
-            'pdf': compressPDF,
-            // Vídeos
-            'mp4': compressVideo,
-            'avi': compressVideo,
-            'mov': compressVideo,
-            'mkv': compressVideo,
-            'webm': compressVideo,
-            // Imagens
             'jpeg': compressImage,
             'jpg': compressImage,
             'png': compressImage,
-            'webp': compressImage
+            'webp': compressImage,
         },
         isCompression: true
     }
 };
 
-// Armazenamento temporário de sessões (em produção, usar banco de dados)
-const sessions = new Map();
-
-// Função para gerar ID de sessão único
-function generateSessionId() {
-    return Date.now().toString(36) + Math.random().toString(36).substr(2);
-}
-
-// NOVA ROTA DE CONVERSÃO MÚLTIPLA COM CATEGORIAS
-router.post('/convert-multiple', upload.array('files', 10), async (req, res) => {
-    const uploadedFiles = req.files;
-    const targetFormat = req.body.targetFormat;
-    const category = req.body.category;
-
-    if (!uploadedFiles || uploadedFiles.length === 0) {
-        return res.status(400).json({ error: 'Nenhum arquivo enviado.' });
+/**
+ * Lógica principal de processamento (Upload, Conversão/Compressão, Armazenamento no R2).
+ * @param {Request} request - O objeto Request do Worker.
+ * @param {Env} env - O objeto de ambiente do Worker, contendo o binding R2_BUCKET.
+ * @returns {Promise<Object>} - Objeto com o resultado do processamento.
+ */
+export async function handleConversion(request, env) {
+    const R2_BUCKET = env.R2_BUCKET;
+    if (!R2_BUCKET) {
+        throw new Error('R2_BUCKET binding not found in environment.');
     }
 
-    if (!category || !categoryFormats[category]) {
-        return res.status(400).json({ error: 'Categoria inválida.' });
+    // 1. Parse do FormData (simulando multer)
+    const formData = await request.formData();
+    const file = formData.get('file');
+    const targetFormat = formData.get('targetFormat')?.toLowerCase();
+    const category = formData.get('category')?.toLowerCase();
+
+    if (!file || !(file instanceof File)) {
+        throw new Error('Nenhum arquivo enviado ou formato inválido.');
+    }
+
+    if (!category || (!categoryFormats[category] && category !== 'compression')) {
+        throw new Error('Categoria inválida.');
     }
 
     const categoryData = categoryFormats[category];
-    const sessionId = generateSessionId();
-    const sessionData = {
-        id: sessionId,
-        category: category,
-        files: [],
-        createdAt: new Date()
-    };
+    const originalName = file.name;
+    const fileExtension = originalName.split('.').pop().toLowerCase();
+    const fileBuffer = await file.arrayBuffer();
+    const fileUint8Array = new Uint8Array(fileBuffer);
+    
+    let processedFileBuffer;
+    let newFilename;
 
-    // Processar cada arquivo
-    for (const uploadedFile of uploadedFiles) {
-        const fileExtension = path.extname(uploadedFile.originalname).slice(1).toLowerCase();
-        const fileData = {
-            originalName: uploadedFile.originalname,
-            originalFormat: fileExtension,
-            targetFormat: targetFormat,
-            size: uploadedFile.size,
-            status: 'processing',
-            filename: null,
-            error: null,
-            category: category
-        };
+    try {
+        if (category === 'compression') {
+            // Lógica de Compressão
+            const compressor = categoryData.formats[fileExtension];
+            if (!compressor) {
+                throw new Error(`Formato .${fileExtension} não suportado para compressão.`);
+            }
+            
+            // A compressão de imagem deve retornar um Buffer/Uint8Array e a nova extensão (se houver)
+            const result = await compressor(fileUint8Array, fileExtension, targetFormat);
+            processedFileBuffer = result.buffer;
+            newFilename = `${crypto.randomUUID()}.${result.extension || fileExtension}`;
 
-        try {
-            // Verificar se o formato é suportado pela categoria
-            if (category === 'compression') {
-                // Para compressão, verificar se o formato tem compressor
-                if (!categoryData.formats[fileExtension]) {
-                    throw new Error(`Formato .${fileExtension} não suportado para compressão`);
-                }
-
-                // Executar compressão usando o compressor apropriado
-                const compressor = categoryData.formats[fileExtension];
-                const outputPath = await compressor(uploadedFile, targetFormat);
-                fileData.status = 'success';
-                fileData.filename = path.basename(outputPath);
-            } else {
-                // Lógica normal de conversão
-                if (!categoryData.formats.includes(fileExtension)) {
-                    throw new Error(`Formato .${fileExtension} não suportado para ${category}`);
-                }
-
-                // Verificar se a conversão é possível
-                if (!categoryData.formats.includes(targetFormat)) {
-                    throw new Error(`Formato de destino .${targetFormat} não suportado para ${category}`);
-                }
-
-                // Executar conversão usando o conversor apropriado
-                const outputPath = await categoryData.converter(uploadedFile, targetFormat);
-                fileData.status = 'success';
-                fileData.filename = path.basename(outputPath);
+        } else if (category === 'images') {
+            // Lógica de Conversão de Imagem
+            if (!categoryData.formats.includes(fileExtension)) {
+                throw new Error(`Formato de origem .${fileExtension} não suportado para conversão de imagem.`);
+            }
+            if (!categoryData.formats.includes(targetFormat)) {
+                throw new Error(`Formato de destino .${targetFormat} não suportado para conversão de imagem.`);
             }
 
-        } catch (error) {
-            console.error(`Erro na conversão de ${uploadedFile.originalname}:`, error.message);
-            fileData.status = 'error';
-            fileData.error = error.message;
+            // A conversão de imagem deve retornar um Buffer/Uint8Array
+            processedFileBuffer = await categoryData.converter(fileUint8Array, targetFormat);
+            newFilename = `${crypto.randomUUID()}.${targetFormat}`;
+
+        } else {
+            throw new Error('Categoria de processamento não implementada ou inválida.');
         }
 
-        // Limpar arquivo original
-        fs.unlink(uploadedFile.path, (err) => {
-            if (err) console.error("Erro ao deletar arquivo original:", err);
+        // 3. Armazenamento no R2
+        const contentType = getContentType(newFilename);
+        
+        await R2_BUCKET.put(newFilename, processedFileBuffer, {
+            httpMetadata: {
+                contentType: contentType,
+            },
+            customMetadata: {
+                originalName: originalName,
+                category: category,
+            }
         });
 
-        sessionData.files.push(fileData);
-    }
+        // 4. Retorno do resultado
+        return {
+            success: true,
+            originalName: originalName,
+            convertedFilename: newFilename,
+            contentType: contentType,
+            size: processedFileBuffer.byteLength,
+        };
 
-    // Armazenar sessão
-    sessions.set(sessionId, sessionData);
-
-    // Limpar sessões antigas (mais de 1 hora)
-    cleanOldSessions();
-
-    res.status(200).json({
-        success: true,
-        sessionId: sessionId,
-        category: category,
-        totalFiles: sessionData.files.length,
-        successCount: sessionData.files.filter(f => f.status === 'success').length,
-        errorCount: sessionData.files.filter(f => f.status === 'error').length
-    });
-});
-
-// ROTA PARA LISTAR ARQUIVOS DE UMA SESSÃO
-router.get('/session/:sessionId/files', (req, res) => {
-    const sessionId = req.params.sessionId;
-    const sessionData = sessions.get(sessionId);
-
-    if (!sessionData) {
-        return res.status(404).json({ 
-            success: false, 
-            error: 'Sessão não encontrada ou expirada.' 
-        });
-    }
-
-    res.status(200).json({
-        success: true,
-        sessionId: sessionId,
-        category: sessionData.category,
-        files: sessionData.files,
-        createdAt: sessionData.createdAt
-    });
-});
-
-// Função para limpar sessões antigas
-function cleanOldSessions() {
-    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
-    
-    for (const [sessionId, sessionData] of sessions.entries()) {
-        if (sessionData.createdAt < oneHourAgo) {
-            // Deletar arquivos da sessão
-            sessionData.files.forEach(file => {
-                if (file.filename && file.status === 'success') {
-                    const filePath = path.join(__dirname, '..', 'uploads', file.filename);
-                    fs.unlink(filePath, (err) => {
-                        if (err) console.error("Erro ao deletar arquivo expirado:", err);
-                    });
-                }
-            });
-            
-            // Remover sessão
-            sessions.delete(sessionId);
-        }
+    } catch (error) {
+        console.error('Erro no processamento:', error.message);
+        throw new Error(`Falha no processamento: ${error.message}`);
     }
 }
 
-// ROTA DE CONVERSÃO ORIGINAL (mantida para compatibilidade)
-router.post('/convert', upload.single('file'), async (req, res) => {
-    const uploadedFile = req.file;
-    const targetFormat = req.body.targetFormat;
-
-    if (!uploadedFile) {
-        return res.status(400).json({ error: 'Nenhum arquivo enviado.' });
+/**
+ * Lógica para download do arquivo do R2.
+ * @param {Request} request - O objeto Request do Worker.
+ * @param {Env} env - O objeto de ambiente do Worker, contendo o binding R2_BUCKET.
+ * @param {string} filename - O nome do arquivo no R2.
+ * @returns {Promise<Response>} - A resposta do Worker com o arquivo para download.
+ */
+export async function handleDownload(request, env, filename) {
+    const R2_BUCKET = env.R2_BUCKET;
+    if (!R2_BUCKET) {
+        return new Response('R2_BUCKET binding not found.', { status: 500 });
     }
 
-    const fileExtension = path.extname(uploadedFile.originalname).slice(1).toLowerCase();
-    let outputPath;
+    const object = await R2_BUCKET.get(filename);
 
-    try {
-        // Determinar categoria baseada na extensão
-        let category = null;
-        let converter = null;
-
-        for (const [cat, data] of Object.entries(categoryFormats)) {
-            if (data.formats.includes(fileExtension)) {
-                category = cat;
-                converter = data.converter;
-                break;
-            }
-        }
-
-        if (!category || !converter) {
-            throw new Error(`Formato .${fileExtension} não suportado.`);
-        }
-
-        outputPath = await converter(uploadedFile, targetFormat);
-
-        // Apagar arquivo original
-        fs.unlink(uploadedFile.path, (err) => {
-            if (err) console.error("Erro ao deletar arquivo original:", err);
-        });
-
-        const outputFilename = path.basename(outputPath);
-        
-        // Responder com JSON contendo URL para download
-        res.status(200).json({
-            success: true,
-            downloadUrl: `/views/download.html?file=${encodeURIComponent(outputFilename)}`
-        });
-
-    } catch (error) {
-        console.error('Erro no processo de conversão:', error.message);
-        fs.unlink(uploadedFile.path, (err) => {
-            if (err) console.error("Erro ao deletar arquivo original após falha:", err);
-        });
-        res.status(500).json({ success: false, error: error.message });
+    if (!object) {
+        return new Response('Arquivo não encontrado no R2.', { status: 404 });
     }
-});
 
-// ROTA DE DOWNLOAD (mantida)
-router.get('/download/:filename', (req, res) => {
-    const filename = req.params.filename;
-    const filePath = path.join(__dirname, '..', 'uploads', filename);
+    // Deletar o arquivo após o download (opcional, dependendo da sua política de retenção)
+    // await R2_BUCKET.delete(filename);
 
-    res.download(filePath, filename, (err) => {
-        if (err) {
-            console.error("Erro ao enviar arquivo para download:", err);
-            if (!res.headersSent) {
-                res.status(404).send('Arquivo não encontrado. Ele pode ter expirado ou já foi baixado.');
-            }
-            return;
-        }
-        
-        // Sucesso! O download começou, agora podemos deletar o arquivo.
-        fs.unlink(filePath, (unlinkErr) => {
-            if (unlinkErr) {
-                console.error("Erro ao deletar arquivo convertido após download:", unlinkErr);
-            } else {
-                console.log("Arquivo convertido deletado com sucesso:", filePath);
-            }
-        });
+    const headers = new Headers();
+    object.writeHttpMetadata(headers);
+    headers.set('Content-Type', object.httpMetadata.contentType);
+    headers.set('Content-Disposition', `attachment; filename="${object.customMetadata.originalName || filename}"`);
+
+    return new Response(object.body, {
+        headers,
     });
-});
+}
 
-module.exports = router;
+// Função auxiliar para determinar o Content-Type
+function getContentType(filename) {
+    const ext = filename.split('.').pop().toLowerCase();
+    switch (ext) {
+        case 'png': return 'image/png';
+        case 'jpg':
+        case 'jpeg': return 'image/jpeg';
+        case 'webp': return 'image/webp';
+        case 'gif': return 'image/gif';
+        case 'avif': return 'image/avif';
+        case 'tiff': return 'image/tiff';
+        default: return 'application/octet-stream';
+    }
+}

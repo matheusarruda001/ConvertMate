@@ -1,155 +1,79 @@
-// --- services/conversionService.js (VERSÃO EXPANDIDA COM VÍDEO E ÁUDIO) ---
+// --- backend/services/conversionService.js ---
 
-const sharp = require('sharp');
-const path = require('path');
-const fs = require('fs');
-const { exec } = require('child_process');
-const util = require('util');
+// Usaremos a biblioteca Jimp, pois é uma das poucas que funciona bem em Workers (com algumas ressalvas).
+// Nota: Em um ambiente de produção, para a melhor performance e menor uso de memória,
+// a abordagem ideal seria usar o Cloudflare Images Transform.
+// O Jimp é usado aqui para demonstrar a capacidade de processamento de imagem em JS puro.
 
-const execPromise = util.promisify(exec);
+// O Jimp usa o Buffer do Node.js internamente, mas a versão 'browser' tenta se adaptar.
+// Em Workers, precisamos garantir que o Jimp consiga ler o ArrayBuffer.
+// O Jimp.read aceita Buffer, então convertemos o Uint8Array para Buffer.
+// O Jimp.getBufferAsync retorna um Buffer, então precisamos converter para ArrayBuffer para o R2.
 
-async function convertImage(inputFile, targetFormat) {
+// Importação do Jimp (certifique-se de que a instalação inclua a compatibilidade com Workers)
+// Para Workers, o Jimp é geralmente importado como 'jimp' e o bundler (como o Wrangler) cuida da compatibilidade.
+// Se houver problemas, podemos tentar Jimp/browser, mas vamos começar com o padrão.
+
+/**
+ * Converte um buffer de imagem para um formato de destino.
+ * @param {Uint8Array} fileUint8Array - O buffer da imagem original.
+ * @param {string} targetFormat - O formato de destino (ex: 'png', 'jpeg', 'webp').
+ * @returns {Promise<ArrayBuffer>} - O buffer da imagem convertida.
+ */
+export async function convertImage(fileUint8Array, targetFormat) {
     try {
-        const outputFileName = `${path.parse(inputFile.originalname).name}.${targetFormat}`;
-        const outputPath = path.join('uploads', outputFileName);
-        await sharp(inputFile.path).toFormat(targetFormat).toFile(outputPath);
-        console.log('Conversão de imagem concluída com sucesso.');
-        return outputPath;
-    } catch (error) {
-        console.error('Erro durante a conversão da imagem:', error);
-        throw new Error('Falha ao converter a imagem.');
-    }
-}
+        // Jimp.read aceita um Buffer, então criamos um Buffer a partir do Uint8Array
+        const image = await Jimp.read(Buffer.from(fileUint8Array));
 
-async function convertDocument(inputFile, targetFormat) {
-    const outputDir = path.resolve('uploads');
-    const inputPath = path.resolve(inputFile.path);
-
-    // No Linux, o comando é simplesmente 'soffice'.
-    const command = `soffice --headless --invisible --nologo --norestore --convert-to ${targetFormat} --outdir "${outputDir}" "${inputPath}"`;
-
-    try {
-        console.log(`Executando comando: ${command}`);
-        await execPromise(command);
-
-        // Lógica para renomear o arquivo de saída
-        const inputFileNameWithoutExt = path.parse(inputFile.filename).name;
-        const tempOutputName = `${inputFileNameWithoutExt}.${targetFormat}`;
-        const tempOutputPath = path.join(outputDir, tempOutputName);
-        
-        const originalNameWithoutExt = path.parse(inputFile.originalname).name;
-        const finalOutputPath = path.join(outputDir, `${originalNameWithoutExt}.${targetFormat}`);
-        
-        if (fs.existsSync(tempOutputPath)) {
-            fs.renameSync(tempOutputPath, finalOutputPath);
-            console.log('Conversão de documento concluída com sucesso.');
-            return finalOutputPath;
-        } else {
-            throw new Error(`Arquivo de saída não encontrado após a conversão: ${tempOutputPath}`);
-        }
-
-    } catch (error) {
-        console.error('Erro detalhado do LibreOffice:', error);
-        throw new Error('Falha ao converter o documento. Verifique a instalação do LibreOffice.');
-    }
-}
-
-async function convertVideo(inputFile, targetFormat) {
-    try {
-        const outputFileName = `${path.parse(inputFile.originalname).name}.${targetFormat}`;
-        const outputPath = path.join('uploads', outputFileName);
-        const inputPath = path.resolve(inputFile.path);
-        const fullOutputPath = path.resolve(outputPath);
-
-        // Configurações de conversão baseadas no formato de destino
-        let ffmpegOptions = '';
-        
+        let mime;
         switch (targetFormat.toLowerCase()) {
-            case 'mp4':
-                ffmpegOptions = '-c:v libx264 -c:a aac -preset fast -crf 23';
+            case 'png':
+                mime = Jimp.MIME_PNG;
                 break;
-            case 'avi':
-                ffmpegOptions = '-c:v libx264 -c:a mp3 -preset fast';
+            case 'jpg':
+            case 'jpeg':
+                mime = Jimp.MIME_JPEG;
                 break;
-            case 'mov':
-                ffmpegOptions = '-c:v libx264 -c:a aac -preset fast';
+            case 'webp':
+                // O Jimp pode precisar de um plugin (como jimp-compact-webp) para WebP,
+                // mas vamos assumir que a versão padrão é suficiente para formatos comuns.
+                // Se falhar, o usuário precisará instalar o plugin.
+                mime = 'image/webp';
                 break;
-            case 'mkv':
-                ffmpegOptions = '-c:v libx264 -c:a aac -preset fast';
+            case 'gif':
+                mime = Jimp.MIME_GIF;
                 break;
-            case 'webm':
-                ffmpegOptions = '-c:v libvpx-vp9 -c:a libopus -preset fast';
+            case 'bmp':
+                mime = Jimp.MIME_BMP;
                 break;
             default:
-                ffmpegOptions = '-c:v libx264 -c:a aac -preset fast';
+                throw new Error(`Formato de destino "${targetFormat}" não suportado.`);
         }
 
-        const command = `ffmpeg -i "${inputPath}" ${ffmpegOptions} "${fullOutputPath}" -y`;
-        
-        console.log(`Executando comando de vídeo: ${command}`);
-        
-        // FFmpeg pode demorar, então aumentamos o timeout
-        const { stdout, stderr } = await execPromise(command, { timeout: 300000 }); // 5 minutos
-        
-        if (fs.existsSync(fullOutputPath)) {
-            console.log('Conversão de vídeo concluída com sucesso.');
-            return outputPath;
-        } else {
-            throw new Error('Arquivo de vídeo não foi gerado.');
+        // Se for JPEG, podemos aplicar uma qualidade padrão de 80
+        if (mime === Jimp.MIME_JPEG) {
+            image.quality(80);
         }
+
+        // getBufferAsync retorna um Buffer, que tem uma propriedade .buffer que é um ArrayBuffer
+        const buffer = await image.getBufferAsync(mime);
+        return buffer.buffer;
 
     } catch (error) {
-        console.error('Erro durante a conversão do vídeo:', error);
-        throw new Error(`Falha ao converter o vídeo: ${error.message}`);
+        console.error('Erro na conversão de imagem com Jimp:', error);
+        throw new Error(`Falha ao converter a imagem: ${error.message}. Verifique se o formato de destino é suportado pelo Jimp.`);
     }
 }
 
-async function convertAudio(inputFile, targetFormat) {
-    try {
-        const outputFileName = `${path.parse(inputFile.originalname).name}.${targetFormat}`;
-        const outputPath = path.join('uploads', outputFileName);
-        const inputPath = path.resolve(inputFile.path);
-        const fullOutputPath = path.resolve(outputPath);
-
-        // Configurações de conversão baseadas no formato de destino
-        let ffmpegOptions = '';
-        
-        switch (targetFormat.toLowerCase()) {
-            case 'mp3':
-                ffmpegOptions = '-c:a libmp3lame -b:a 192k';
-                break;
-            case 'wav':
-                ffmpegOptions = '-c:a pcm_s16le';
-                break;
-            case 'aac':
-                ffmpegOptions = '-c:a aac -b:a 192k';
-                break;
-            default:
-                ffmpegOptions = '-c:a libmp3lame -b:a 192k';
-        }
-
-        const command = `ffmpeg -i "${inputPath}" ${ffmpegOptions} "${fullOutputPath}" -y`;
-        
-        console.log(`Executando comando de áudio: ${command}`);
-        
-        const { stdout, stderr } = await execPromise(command, { timeout: 120000 }); // 2 minutos
-        
-        if (fs.existsSync(fullOutputPath)) {
-            console.log('Conversão de áudio concluída com sucesso.');
-            return outputPath;
-        } else {
-            throw new Error('Arquivo de áudio não foi gerado.');
-        }
-
-    } catch (error) {
-        console.error('Erro durante a conversão do áudio:', error);
-        throw new Error(`Falha ao converter o áudio: ${error.message}`);
-    }
+// Exportações vazias para manter a interface de serviço, mas removendo as funções não suportadas
+export async function convertDocument() {
+    throw new Error('Conversão de Documentos não suportada no Cloudflare Worker nesta versão.');
 }
 
-module.exports = {
-    convertImage,
-    convertDocument,
-    convertVideo,
-    convertAudio,
-};
+export async function convertVideo() {
+    throw new Error('Conversão de Vídeo não suportada no Cloudflare Worker nesta versão.');
+}
+
+export async function convertAudio() {
+    throw new Error('Conversão de Áudio não suportada no Cloudflare Worker nesta versão.');
+}

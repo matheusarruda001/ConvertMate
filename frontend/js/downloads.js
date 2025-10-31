@@ -12,71 +12,44 @@ document.addEventListener('DOMContentLoaded', () => {
     const errorFilesSpan = document.getElementById('error-files');
     const downloadAllBtn = document.getElementById('download-all-btn');
 
-    // Obter sessionId da URL
+    // Obter o nome do arquivo (filename) da URL
     const urlParams = new URLSearchParams(window.location.search);
-    const sessionId = urlParams.get('session');
+    const filename = urlParams.get('file');
 
-    if (!sessionId) {
-        showError('ID da sessão não encontrado. Por favor, inicie uma nova conversão.');
+    // O botão de download de todos não é mais necessário
+    if (downloadAllBtn) {
+        downloadAllBtn.remove();
+    }
+
+    if (!filename) {
+        showError('Nome do arquivo não encontrado. Por favor, inicie uma nova conversão.');
         return;
     }
 
-    // Carregar arquivos da sessão
-    loadSessionFiles(sessionId);
+    // Como é um arquivo único, simulamos os dados de uma sessão
+    const fileData = {
+        filename: filename,
+        originalName: filename, // O nome original será obtido pelo Worker
+        status: 'success',
+        size: 0, // O tamanho será obtido pelo Worker
+        originalFormat: '...',
+        targetFormat: '...'
+    };
 
-    // Event listener para download de todos os arquivos
-    downloadAllBtn.addEventListener('click', downloadAllFiles);
+    // Exibir o arquivo
+    displayFile(fileData);
+    showDownloads();
 
-    async function loadSessionFiles(sessionId) {
-        try {
-            showLoading();
-            
-            const response = await fetch(`/api/session/${sessionId}/files`);
-            
-            if (!response.ok) {
-                throw new Error('Falha ao carregar arquivos da sessão');
-            }
-            
-            const data = await response.json();
-            
-            if (data.success && data.files) {
-                displayFiles(data.files);
-                showDownloads();
-            } else {
-                throw new Error(data.error || 'Nenhum arquivo encontrado');
-            }
-            
-        } catch (error) {
-            console.error('Erro ao carregar arquivos:', error);
-            showError(error.message);
-        }
-    }
-
-    function displayFiles(files) {
+    function displayFile(file) {
         downloadsList.innerHTML = '';
         
-        let totalFiles = files.length;
-        let successFiles = 0;
-        let errorFiles = 0;
+        // Atualizar resumo (simulando 1 arquivo)
+        totalFilesSpan.textContent = 1;
+        successFilesSpan.textContent = 1;
+        errorFilesSpan.textContent = 0;
 
-        files.forEach(file => {
-            if (file.status === 'success') {
-                successFiles++;
-            } else {
-                errorFiles++;
-            }
-
-            const fileItem = createFileItem(file);
-            downloadsList.appendChild(fileItem);
-        });
-
-        // Atualizar resumo
-        totalFilesSpan.textContent = totalFiles;
-        successFilesSpan.textContent = successFiles;
-        errorFilesSpan.textContent = errorFiles;
-
-        // Mostrar/esconder botão de download de todos
-        downloadAllBtn.style.display = successFiles > 0 ? 'inline-flex' : 'none';
+        const fileItem = createFileItem(file);
+        downloadsList.appendChild(fileItem);
     }
 
     function createFileItem(file) {
@@ -88,6 +61,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const statusText = isSuccess ? 'Convertido' : 'Erro';
         const statusClass = isSuccess ? 'success' : 'error';
 
+        // O Worker (handleDownload) lidará com o Content-Disposition para fornecer o nome original e o Content-Length para o tamanho.
+        // O frontend simplesmente aponta para a rota de download.
         item.innerHTML = `
             <div class="file-info">
                 <div class="file-icon ${statusClass}">
@@ -96,10 +71,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="file-details">
                     <h4>${file.originalName}</h4>
                     <div class="file-meta">
-                        <span>Tamanho: ${formatFileSize(file.size)}</span>
-                        ${isSuccess ? `<span class="conversion-info">${file.originalFormat.toUpperCase()} → ${file.targetFormat.toUpperCase()}</span>` : ''}
+                        <span>Tamanho: ${file.size === 0 ? 'Calculando...' : formatFileSize(file.size)}</span>
+                        <span class="conversion-info">Pronto para Download</span>
                     </div>
-                    ${!isSuccess && file.error ? `<div class="error-message">${file.error}</div>` : ''}
                 </div>
             </div>
             <div class="file-status">
@@ -130,38 +104,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     }
 
-    async function downloadAllFiles() {
-        const downloadLinks = document.querySelectorAll('.download-btn:not([disabled])');
-        
-        if (downloadLinks.length === 0) {
-            alert('Nenhum arquivo disponível para download.');
-            return;
-        }
-
-        // Desabilitar botão temporariamente
-        downloadAllBtn.disabled = true;
-        downloadAllBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Baixando...';
-
-        // Fazer download de cada arquivo com um pequeno delay
-        for (let i = 0; i < downloadLinks.length; i++) {
-            const link = downloadLinks[i];
-            
-            // Simular clique no link
-            link.click();
-            
-            // Pequeno delay entre downloads para evitar problemas
-            if (i < downloadLinks.length - 1) {
-                await new Promise(resolve => setTimeout(resolve, 500));
-            }
-        }
-
-        // Reabilitar botão
-        setTimeout(() => {
-            downloadAllBtn.disabled = false;
-            downloadAllBtn.innerHTML = '<i class="fa-solid fa-download"></i> Baixar Todos';
-        }, 2000);
-    }
-
     function showLoading() {
         loadingState.classList.remove('hidden');
         downloadsContainer.classList.add('hidden');
@@ -181,4 +123,3 @@ document.addEventListener('DOMContentLoaded', () => {
         errorMessage.textContent = message;
     }
 });
-

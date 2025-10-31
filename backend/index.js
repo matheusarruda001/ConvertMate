@@ -1,9 +1,22 @@
 // --- backend/index.js ---
 
-// Importa nosso roteador (que também vamos adaptar)
+import { Router } from 'itty-router';
 import conversionRouter from './routes/conversionRoutes';
 
-// A função principal de um Worker. Todo pedido passa por aqui.
+// Cria um novo roteador itty-router
+const router = Router();
+
+// Adiciona as rotas de conversão ao nosso roteador principal
+// O itty-router permite que um router seja usado como middleware/sub-router
+router.all('/api/*', conversionRouter.handle);
+
+// Rota padrão para a raiz (pode ser útil para health check)
+router.get('/', () => new Response('ConvertMate Worker is running!'));
+
+// Rota de fallback para 404
+router.all('*', () => new Response('Not Found.', { status: 404 }));
+
+// Função principal do Cloudflare Worker
 export default {
   async fetch(request, env, ctx) {
     // Lida com requisições "preflight" de CORS. Essencial para a comunicação entre domínios.
@@ -11,16 +24,8 @@ export default {
       return handleOptions(request);
     }
 
-    const url = new URL(request.url);
-
-    // Se o caminho da URL começar com '/api', passamos para nosso roteador.
-    if (url.pathname.startsWith('/api')) {
-      // O método 'handle' será uma nova função que criaremos em conversionRoutes.js
-      return conversionRouter.handle(request, env);
-    }
-
-    // Se não for uma rota de API, o Worker não tem nada a fazer.
-    return new Response('Not Found', { status: 404 });
+    // Passa a requisição para o roteador e retorna a resposta
+    return router.handle(request, env, ctx);
   },
 };
 
@@ -37,7 +42,8 @@ function handleOptions(request) {
       headers: {
         'Access-Control-Allow-Origin': '*', // Em produção, mude para o seu domínio do Pages!
         'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
+        'Access-Control-Allow-Headers': 'Content-Type, X-File-Name, X-Target-Format',
+        'Access-Control-Max-Age': '86400', // Cache a resposta preflight por 24 horas
       },
     });
   } else {
