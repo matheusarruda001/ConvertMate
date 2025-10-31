@@ -668,3 +668,13 @@ footer {
     background: #dc3545;
 }
 
+
+.hero-highlight { 
+    display: inline-block; 
+    background: #4A90E2; 
+    color: white; 
+    padding: 0.4rem 0.8rem; 
+    border-radius: 8px; 
+    font-weight: 400; 
+    font-size: medium;
+}
