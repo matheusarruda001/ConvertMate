@@ -52,6 +52,7 @@ export async function handleConversion(request, env) {
 
     let processedFileBuffer;
     let newFilename;
+    let downloadName;
 
     try {
         if (categoryData.isCompression) {
@@ -62,7 +63,9 @@ export async function handleConversion(request, env) {
 
             const result = await compressor(fileUint8Array, fileExtension, targetFormat);
             processedFileBuffer = result.buffer;
-            newFilename = `${crypto.randomUUID()}.${result.extension || fileExtension}`;
+            const finalExtension = result.extension || fileExtension;
+            newFilename = `${crypto.randomUUID()}.${finalExtension}`;
+            downloadName = buildDownloadName(finalExtension);
         } else if (category === 'images') {
             if (!categoryData.formats.includes(fileExtension)) {
                 throw new Error(`Formato de origem .${fileExtension} nao suportado para conversao de imagem.`);
@@ -75,6 +78,7 @@ export async function handleConversion(request, env) {
 
             processedFileBuffer = await categoryData.converter(fileUint8Array, targetFormat);
             newFilename = `${crypto.randomUUID()}.${targetFormat}`;
+            downloadName = buildDownloadName(targetFormat);
         } else {
             throw new Error('Categoria de processamento nao implementada.');
         }
@@ -87,6 +91,7 @@ export async function handleConversion(request, env) {
             },
             customMetadata: {
                 originalName,
+                downloadName: downloadName || originalName,
                 category,
             },
         });
@@ -95,6 +100,7 @@ export async function handleConversion(request, env) {
             success: true,
             originalName,
             convertedFilename: newFilename,
+            downloadName: downloadName || originalName,
             contentType,
             size: processedFileBuffer.byteLength,
         };
@@ -126,9 +132,19 @@ export async function handleDownload(request, env, filename) {
     const headers = new Headers();
     object.writeHttpMetadata(headers);
     headers.set('Content-Type', object.httpMetadata.contentType);
-    headers.set('Content-Disposition', `attachment; filename="${object.customMetadata.originalName || filename}"`);
+    const downloadName =
+        object.customMetadata?.downloadName ||
+        object.customMetadata?.originalName ||
+        filename;
+    headers.set('Content-Disposition', `attachment; filename="${downloadName}"`);
 
     return new Response(object.body, { headers });
+}
+
+function buildDownloadName(newExtension) {
+    const cleanedExtension = (newExtension || '').toLowerCase();
+    const extSegment = cleanedExtension ? `.${cleanedExtension}` : '';
+    return `result-convertmate${extSegment}`;
 }
 
 function getContentType(filename) {

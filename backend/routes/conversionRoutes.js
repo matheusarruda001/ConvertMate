@@ -22,7 +22,9 @@ router.post('/convert', async (request, env) => {
             message: 'Processamento concluído com sucesso.',
             downloadFilename: result.convertedFilename,
             originalName: result.originalName,
+            downloadName: result.downloadName,
             size: result.size,
+            contentType: result.contentType,
         }), {
             headers: { 'Content-Type': 'application/json' },
             status: 200,
